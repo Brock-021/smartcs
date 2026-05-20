@@ -4,15 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache">
-<title>智能客服 - SmartCS</title>
+<title>智能客服 - {{ brand_name }}</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SmartCS">
+<meta name="apple-mobile-web-app-title" content="{{ brand_short }}">
 <style>
+:root {
+  --primary-color: {{ brand_primary_color }};
+  --primary-dark: var(--primary-dark);
+  --primary-darker: var(--primary-darker);
+}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f0f2f5;height:100vh;display:flex;flex-direction:column}
-.header{background:linear-gradient(135deg,#1a73e8 0%,#0d47a1 100%);color:#fff;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:10px}
+.header{background:linear-gradient(135deg,var(--primary-color) 0%,var(--primary-dark) 100%);color:#fff;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:10px}
 .header .logo{width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .header .info{flex:1}
 .header .info h1{font-size:16px;font-weight:500}
@@ -21,9 +26,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .msg{max-width:85%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.6;animation:fadeIn .25s ease;word-wrap:break-word}
 .msg img{max-width:100%;height:auto;border-radius:8px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.msg.user{align-self:flex-end;background:#1a73e8;color:#fff;border-bottom-right-radius:4px}
+.msg.user{align-self:flex-end;background:var(--primary-color);color:#fff;border-bottom-right-radius:4px}
 .msg.bot{align-self:flex-start;background:#fff;color:#333;border-bottom-left-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
-.msg.agent{align-self:flex-start;background:#e3f2fd;color:#1565c0;border-bottom-left-radius:4px;border-left:3px solid #1a73e8}
+.msg.agent{align-self:flex-start;background:#e3f2fd;color:#1565c0;border-bottom-left-radius:4px;border-left:3px solid var(--primary-color)}
 .msg.system{align-self:center;background:#fff3cd;color:#856404;font-size:12px;border-radius:8px}
 .msg .time{font-size:11px;color:#999;margin-top:4px;display:block}
 .typing{display:inline-flex;gap:4px;padding:10px 0}
@@ -33,15 +38,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
 .input-area{background:#fff;padding:8px 12px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid #e0e0e0;display:flex;gap:6px;align-items:flex-end}
 .input-area textarea{flex:1;border:1px solid #ddd;border-radius:20px;padding:9px 14px;font-size:16px;resize:none;max-height:80px;outline:none;font-family:inherit;transition:border .2s}
-.input-area textarea:focus{border-color:#1a73e8}
-.input-area .btn-send{background:#1a73e8;color:#fff;border:none;width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
-.input-area .btn-send:hover{background:#1557b0}
+.input-area textarea:focus{border-color:var(--primary-color)}
+.input-area .btn-send{background:var(--primary-color);color:#fff;border:none;width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.input-area .btn-send:hover{background:var(--primary-darker)}
 .input-area .btn-send:disabled{opacity:.4;cursor:not-allowed}
 .input-area .btn-img{cursor:pointer;font-size:18px;padding:8px 8px;min-width:44px;min-height:44px;color:#666;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:2px;user-select:none;border-radius:8px}
-.input-area .btn-img:hover{color:#1a73e8;background:#e3f2fd}
-.input-area .btn-img.dragover{color:#1a73e8;background:#e3f2fd;padding:10px 12px;border:2px dashed #1a73e8}
+.input-area .btn-img:hover{color:var(--primary-color);background:#e3f2fd}
+.input-area .btn-img.dragover{color:var(--primary-color);background:#e3f2fd;padding:10px 12px;border:2px dashed var(--primary-color)}
 .input-area .btn-img .img-label{font-size:11px;color:#888}
-.input-area .btn-img:hover .img-label{color:#1a73e8}
+.input-area .btn-img:hover .img-label{color:var(--primary-color)}
 .input-area .btn-human{background:#ff5252;color:#fff;border:none;padding:10px 18px;min-height:44px;border-radius:20px;cursor:pointer;font-size:13px;white-space:nowrap;transition:all .2s;flex-shrink:0}
 .input-area .btn-human:hover{background:#d32f2f}
 .input-area .btn-human:disabled{opacity:.4;cursor:not-allowed}
@@ -56,9 +61,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .modal h2{font-size:18px;color:#333;margin-bottom:6px;text-align:center}
 .modal p{font-size:13px;color:#666;text-align:center;margin-bottom:18px}
 .modal input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:14px;margin-bottom:10px;outline:none;transition:border .2s}
-.modal input:focus{border-color:#1a73e8}
-.modal .btn{width:100%;padding:11px;background:#1a73e8;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer;transition:all .2s}
-.modal .btn:hover{background:#1557b0}
+.modal input:focus{border-color:var(--primary-color)}
+.modal .btn{width:100%;padding:11px;background:var(--primary-color);color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer;transition:all .2s}
+.modal .btn:hover{background:var(--primary-darker)}
 .modal .btn-danger{background:#ff5252}
 .modal .btn-danger:hover{background:#d32f2f}
 .modal .btn-secondary{background:#f0f0f0;color:#333;margin-top:8px}
@@ -66,7 +71,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .modal .btn-success{background:#43a047}
 .modal .btn-success:hover{background:#2e7d32}
 .agent-info{background:#e3f2fd;padding:8px 14px;display:none;align-items:center;gap:10px;font-size:13px;color:#1565c0;border-bottom:1px solid #bbdefb}
-.agent-info .avatar{width:32px;height:32px;background:#1a73e8;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.agent-info .avatar{width:32px;height:32px;background:var(--primary-color);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
 .agent-info .detail{flex:1}
 .agent-info .detail .nm{font-weight:500}
 .agent-info .detail .dept{font-size:11px;color:#666}
@@ -124,7 +129,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 /* 下拉刷新提示 (移动端专属) */
 .pull-to-refresh{display:none;text-align:center;font-size:11px;color:#999;padding:6px 0;overflow:hidden;max-height:0;transition:all .3s}
 .pull-to-refresh.show{display:block;max-height:30px}
-.pull-to-refresh .ptr-spinner{display:inline-block;width:14px;height:14px;border:2px solid #ddd;border-top-color:#1a73e8;border-radius:50%;animation:ptr-spin .6s linear infinite;margin-right:4px;vertical-align:middle}
+.pull-to-refresh .ptr-spinner{display:inline-block;width:14px;height:14px;border:2px solid #ddd;border-top-color:var(--primary-color);border-radius:50%;animation:ptr-spin .6s linear infinite;margin-right:4px;vertical-align:middle}
 @keyframes ptr-spin{to{transform:rotate(360deg)}}
 
 /* 底部 Tab 导航 (移动端) */
@@ -132,7 +137,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 @media(max-width:480px){
   .bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e0e0e0;z-index:200;padding-bottom:env(safe-area-inset-bottom,0px)}
   .bottom-nav .nav-item{flex:1;text-align:center;padding:6px 2px;font-size:10px;color:#888;cursor:pointer;transition:all .2s}
-  .bottom-nav .nav-item.active{color:#1a73e8}
+  .bottom-nav .nav-item.active{color:var(--primary-color)}
   .bottom-nav .nav-item .nav-icon{font-size:20px;display:block;margin-bottom:1px}
   .bottom-nav .nav-item .nav-count{display:inline-block;background:#ff5252;color:#fff;font-size:9px;padding:0 5px;border-radius:8px;margin-left:2px}
   .bottom-nav-spacer{height:52px;display:block}
@@ -149,7 +154,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .history-item{padding:10px 0;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
 .history-item:last-child{border-bottom:none}
 .history-item .tk-info{flex:1}
-.history-item .tk-num{font-size:12px;color:#1a73e8;font-weight:500}
+.history-item .tk-num{font-size:12px;color:var(--primary-color);font-weight:500}
 .history-item .tk-issue{font-size:12px;color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
 .history-item .tk-status{font-size:10px;padding:2px 8px;border-radius:6px}
 .history-item .tk-status.resolved{background:#e8f5e9;color:#2e7d32}
@@ -167,10 +172,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 /* 用户认证栏 */
 .user-auth-bar{display:none;align-items:center;gap:8px;padding:6px 14px;background:#e8f0fe;border-bottom:1px solid #c5d9f2;font-size:13px}
-.user-auth-bar .avatar{width:28px;height:28px;background:#1a73e8;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+.user-auth-bar .avatar{width:28px;height:28px;background:var(--primary-color);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
 .user-auth-bar .name{flex:1;color:#333;font-weight:500}
 .user-auth-bar .badge{font-size:10px;background:#43a047;color:#fff;padding:1px 8px;border-radius:8px}
-.user-auth-bar .login-btn{font-size:12px;color:#1a73e8;cursor:pointer;padding:4px 10px;border:1px solid #1a73e8;border-radius:6px;transition:all .2s;white-space:nowrap}
+.user-auth-bar .login-btn{font-size:12px;color:var(--primary-color);cursor:pointer;padding:4px 10px;border:1px solid var(--primary-color);border-radius:6px;transition:all .2s;white-space:nowrap}
 .user-auth-bar .login-btn:hover{background:#e3f2fd}
 .user-auth-bar .logout-btn{font-size:12px;color:#d32f2f;cursor:pointer;padding:4px 10px;border:1px solid #d32f2f;border-radius:6px;transition:all .2s;white-space:nowrap}
 .user-auth-bar .logout-btn:hover{background:#ffebee}
@@ -194,13 +199,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .login-modal h2{font-size:18px;color:#333;margin-bottom:4px;text-align:center}
 .login-modal .sub{font-size:13px;color:#666;text-align:center;margin-bottom:16px}
 .login-modal input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:14px;margin-bottom:10px;outline:none;transition:border .2s}
-.login-modal input:focus{border-color:#1a73e8}
+.login-modal input:focus{border-color:var(--primary-color)}
 .login-modal .login-error{font-size:12px;color:#d32f2f;text-align:center;margin-bottom:8px;display:none}
-.login-btn-primary{width:100%;padding:11px;background:#1a73e8;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer;transition:all .2s}
-.login-btn-primary:hover{background:#1557b0}
+.login-btn-primary{width:100%;padding:11px;background:var(--primary-color);color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer;transition:all .2s}
+.login-btn-primary:hover{background:var(--primary-darker)}
 .login-btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .toggle-link{text-align:center;font-size:12px;color:#888;margin-top:10px}
-.toggle-link a{color:#1a73e8;cursor:pointer;text-decoration:none}
+.toggle-link a{color:var(--primary-color);cursor:pointer;text-decoration:none}
 .toggle-link a:hover{text-decoration:underline}
 /* 页面内容 (设置/工单) */
 .page-content{display:none !important;padding:0 !important;margin:0 !important;height:auto !important;overflow-y:auto}
@@ -211,7 +216,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 body.logged-in .esc-bar .btn-resolved{display:none !important}
 /* 个人中心弹窗 */
 .profile-page-modal{max-width:420px;max-height:80vh;overflow-y:auto;padding:20px}
-.profile-page-modal .profile-header{text-align:center;padding:16px 0;background:linear-gradient(135deg,#1a73e8,#0d47a1);color:#fff;border-radius:10px;margin-bottom:12px}
+.profile-page-modal .profile-header{text-align:center;padding:16px 0;background:linear-gradient(135deg,var(--primary-color),var(--primary-dark));color:#fff;border-radius:10px;margin-bottom:12px}
 .profile-page-modal .profile-header .big-avatar{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 6px}
 .profile-page-modal .profile-header h2{font-size:16px;margin:0}
 .profile-page-modal .profile-header .email{font-size:11px;color:rgba(255,255,255,0.7);margin-top:2px}
@@ -222,9 +227,9 @@ body.logged-in .esc-bar .btn-resolved{display:none !important}
 .profile-page-modal .info-row .value{color:#333}
 /* 搜索弹窗 */
 .repair-search-input{flex:1;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none}
-.repair-search-input:focus{border-color:#1a73e8}
-.repair-search-btn{padding:9px 16px;background:#1a73e8;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px}
-.repair-search-btn:hover{background:#1557b0}
+.repair-search-input:focus{border-color:var(--primary-color)}
+.repair-search-btn{padding:9px 16px;background:var(--primary-color);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px}
+.repair-search-btn:hover{background:var(--primary-darker)}
 /* 空状态 */
 .empty-state{text-align:center;padding:40px 20px;color:#999}
 .empty-state .empty-icon{font-size:48px;margin-bottom:12px}
@@ -801,7 +806,7 @@ function pollMessages(){
           playNotifySound();
           // 浏览器通知
           if (window.Notification && Notification.permission === 'granted') {
-            new Notification('SmartCS', {body: '您有一条新消息', icon: '/static/icon.png'});
+            new Notification('{{ brand_short }}', {body: '您有一条新消息', icon: '/static/icon.png'});
           }
         }
       }
@@ -968,11 +973,11 @@ function loadCustomerAuth() {
         var initial = d.customer.name ? d.customer.name.charAt(0) : '?';
         section.innerHTML = '<div class="profile-info" style="margin-bottom:4px">' +
           '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0">' +
-          '<div style="width:36px;height:36px;background:#1a73e8;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;cursor:pointer" onclick="showProfilePage()">' + initial + '</div>' +
+          '<div style="width:36px;height:36px;background:var(--primary-color);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;cursor:pointer" onclick="showProfilePage()">' + initial + '</div>' +
           '<div style="flex:1;text-align:left;cursor:pointer" onclick="showProfilePage()"><div style="font-size:14px;font-weight:500;color:#333">' + escapeHtml(d.customer.name || '') + '</div><div style="font-size:12px;color:#999">' + escapeHtml(d.customer.email || '') + '</div></div>' +
           '<button onclick="logout()" style="background:transparent;color:#d32f2f;border:1px solid #d32f2f;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px">退出</button></div>' +
           '<div style="display:flex;gap:6px;margin-top:8px">' +
-          '<button onclick="showProfilePage()" style="flex:1;padding:8px;background:#e3f2fd;color:#1a73e8;border:none;border-radius:8px;cursor:pointer;font-size:12px">👤 个人信息</button>' +
+          '<button onclick="showProfilePage()" style="flex:1;padding:8px;background:#e3f2fd;color:var(--primary-color);border:none;border-radius:8px;cursor:pointer;font-size:12px">👤 个人信息</button>' +
           '<button onclick="showHistory()" style="flex:1;padding:8px;background:#e8f5e9;color:#43a047;border:none;border-radius:8px;cursor:pointer;font-size:12px">📋 报修记录</button>' +
           '<button onclick="showRepairSearch()" style="flex:1;padding:8px;background:#fff3e0;color:#ff9800;border:none;border-radius:8px;cursor:pointer;font-size:12px">🔍 搜索工单</button></div>' +
           '</div>';
@@ -980,7 +985,7 @@ function loadCustomerAuth() {
         section.innerHTML = '<div style="text-align:center;padding:12px">' +
           '<div style="font-size:32px;margin-bottom:6px">🔒</div>' +
           '<div style="font-size:14px;color:#666;margin-bottom:10px">未登录</div>' +
-          '<button onclick="showLoginForm()" style="padding:8px 24px;background:#1a73e8;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">登录 / 注册</button>' +
+          '<button onclick="showLoginForm()" style="padding:8px 24px;background:var(--primary-color);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">登录 / 注册</button>' +
           '</div>';
       }
     } catch(e) { section.innerHTML = ''; }
@@ -1148,7 +1153,7 @@ function togglePushNotify() {
       pushSubscribed = true;
       document.getElementById('pushBtn').textContent = '🔔 已订阅';
       document.getElementById('pushBtn').classList.add('subscribed');
-      new Notification('SmartCS', {body: '通知已开启，有新消息将提醒您', icon: '/static/icon.png'});
+      new Notification('{{ brand_short }}', {body: '通知已开启，有新消息将提醒您', icon: '/static/icon.png'});
     }
   });
 }
@@ -1374,7 +1379,7 @@ function loadMyTickets() {
       }
       list.innerHTML = h;
       if (ts.length > 5) {
-        list.innerHTML += '<div style="text-align:center;font-size:12px;color:#999;padding:6px">共' + ts.length + '条记录 <a onclick="showHistory()" style="color:#1a73e8;cursor:pointer">查看全部 →</a></div>';
+        list.innerHTML += '<div style="text-align:center;font-size:12px;color:#999;padding:6px">共' + ts.length + '条记录 <a onclick="showHistory()" style="color:var(--primary-color);cursor:pointer">查看全部 →</a></div>';
       }
     } catch(e) { section.style.display = 'none'; }
   };
@@ -1436,7 +1441,7 @@ function loadProfilePageData() {
             (agentName ? '<div class="info-row"><span class="label">客服:</span><span class="value">' + agentName + (agentDept ? ' · ' + agentDept : '') + '</span></div>' : '') +
             '</div>' +
             '<div style="display:flex;gap:6px">' +
-            '<button onclick="document.getElementById(\'profilePageModal\').style.display=\'none\';showHistory()" style="flex:1;padding:8px;background:#e3f2fd;color:#1a73e8;border:none;border-radius:8px;cursor:pointer;font-size:12px">📋 报修记录</button>' +
+            '<button onclick="document.getElementById(\'profilePageModal\').style.display=\'none\';showHistory()" style="flex:1;padding:8px;background:#e3f2fd;color:var(--primary-color);border:none;border-radius:8px;cursor:pointer;font-size:12px">📋 报修记录</button>' +
             '<button onclick="document.getElementById(\'profilePageModal\').style.display=\'none\';showRepairSearch()" style="flex:1;padding:8px;background:#e8f5e9;color:#43a047;border:none;border-radius:8px;cursor:pointer;font-size:12px">🔍 搜索工单</button>' +
             '</div>' +
             '<button onclick="logout();document.getElementById(\'profilePageModal\').style.display=\'none\'" style="width:100%;margin-top:8px;padding:8px;background:#ffebee;color:#d32f2f;border:none;border-radius:8px;cursor:pointer;font-size:12px">退出登录</button>';
@@ -1509,7 +1514,7 @@ function doRepairSearch() {
         var agentName = t.agent_display || t.agent_name || '';
         h += '<div class="tk-item" onclick="toggleTicketDetail(this)" style="padding:8px 0;border-bottom:1px solid #f0f0f0;cursor:pointer;text-align:left">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">' +
-          '<span style="color:#1a73e8;font-family:monospace;font-size:11px">' + escapeHtml(tkNo) + '</span>' +
+          '<span style="color:var(--primary-color);font-family:monospace;font-size:11px">' + escapeHtml(tkNo) + '</span>' +
           '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:' + statusBg + ';color:' + statusColor + '">' + (statusMap[t.status]||t.status) + '</span></div>' +
           '<div style="font-size:12px;color:#333;margin:2px 0">' + escapeHtml(issue) + '</div>' +
           '<div style="font-size:10px;color:#999">' + (t.created_at || '').substring(0,10) + (agentName ? ' · ' + escapeHtml(agentName) : '') + '</div>' +
@@ -1573,12 +1578,12 @@ function renderMyTicketsInModal() {
         h += '<div class="ticket-card" style="background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06);cursor:pointer;transition:all .2s;text-align:left" ' +
           'onclick="' + (canResume ? 'resumeTicketConversation(\'' + t.id + '\',\'' + escapeHtml(t.conversation_id || '') + '\')' : 'toggleTicketDetail2(this)') + '">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-          '<span style="font-size:11px;color:#1a73e8;font-family:monospace">' + escapeHtml(tkNo) + '</span>' +
+          '<span style="font-size:11px;color:var(--primary-color);font-family:monospace">' + escapeHtml(tkNo) + '</span>' +
           '<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:' + bg + ';color:' + sc + '">' + (statusMap[st]||st) + '</span></div>' +
           '<div style="font-size:13px;color:#333;margin:2px 0 4px">' + escapeHtml(issue) + '</div>' +
           '<div style="font-size:11px;color:#999">' + (t.created_at || '').substring(0,16) + (canResume ? ' · 点击继续对话' : '') +
           (t.agent_display ? ' · ' + escapeHtml(t.agent_display) : '') + '</div>' +
-          (canResume ? '<div style="margin-top:6px;font-size:11px;color:#1a73e8">💬 点击继续对话 →</div>' : '') +
+          (canResume ? '<div style="margin-top:6px;font-size:11px;color:var(--primary-color)">💬 点击继续对话 →</div>' : '') +
           '<div class="tk-detail2" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid #f0f0f0;font-size:12px;line-height:1.6;color:#555">' +
           '<div><span style="color:#888">编号:</span> ' + escapeHtml(tkNo) + '</div>' +
           '<div><span style="color:#888">描述:</span> ' + escapeHtml(t.issue_description || '(无)') + '</div>' +

@@ -674,6 +674,65 @@ class SmartCSTest:
         test('G4. 不存在的页面返回404', st == 404, f'status={st}')
 
     # ========================================================================== #
+    #  H. 配置管理系统 (v4.1)
+    # ========================================================================== #
+
+    def test_init_default_config(self):
+        """验证启动时系统配置默认值正确"""
+        r = self.api(self.admin, '/api/admin/config', method='GET')
+        test('H1. 默认品牌名称', r and r.get('brand_name') == 'SmartCS 智能客服', str(r.get('brand_name',''))[:50] if r else 'no resp')
+        test('H1a. 默认主题色', r and r.get('brand_primary_color') == '#1a73e8', str(r.get('brand_primary_color',''))[:50] if r else 'no resp')
+        test('H1b. 默认密码策略', r and r.get('password_min_length') == '8', str(r.get('password_min_length',''))[:50] if r else 'no resp')
+        test('H1c. 默认会话超时', r and r.get('session_lifetime') == '28800', str(r.get('session_lifetime',''))[:50] if r else 'no resp')
+
+    def test_brand_config_api(self):
+        """测试品牌配置 GET/POST API"""
+        # GET
+        r = self.api(self.admin, '/api/admin/brand-config', method='GET')
+        test('H2. 品牌配置GET', r and r.get('brand_name') == 'SmartCS 智能客服', str(r)[:100] if r else 'no resp')
+        # POST - 修改品牌名称
+        r = self.api(self.admin, '/api/admin/brand-config', {'brand_name': '测试品牌', 'brand_primary_color': '#ff6600'})
+        test('H2a. 品牌配置POST', r and r.get('ok'), str(r)[:100] if r else 'no resp')
+        # GET - 验证修改生效
+        r = self.api(self.admin, '/api/admin/brand-config', method='GET')
+        test('H2b. 品牌名称已修改', r and r.get('brand_name') == '测试品牌', str(r.get('brand_name',''))[:50] if r else 'no resp')
+        test('H2c. 主题色已修改', r and r.get('brand_primary_color') == '#ff6600', str(r.get('brand_primary_color',''))[:50] if r else 'no resp')
+
+    def test_security_config_api(self):
+        """测试安全配置 GET/POST API"""
+        # GET
+        r = self.api(self.admin, '/api/admin/security-config', method='GET')
+        test('H3. 安全配置GET', r and r.get('password_min_length') == '8', str(r)[:100] if r else 'no resp')
+        # POST - 修改密码最小长度
+        r = self.api(self.admin, '/api/admin/security-config', {'password_min_length': '12'})
+        test('H3a. 安全配置POST', r and r.get('ok'), str(r)[:100] if r else 'no resp')
+        # GET - 验证修改生效
+        r = self.api(self.admin, '/api/admin/security-config', method='GET')
+        test('H3b. 密码最小长度已修改', r and r.get('password_min_length') == '12', str(r.get('password_min_length',''))[:50] if r else 'no resp')
+
+    def test_config_persist(self):
+        """配置修改后重新读取验证持久化"""
+        # 修改品牌名称
+        self.api(self.admin, '/api/admin/brand-config', {'brand_name': '持久化测试品牌'})
+        # 修改安全配置
+        self.api(self.admin, '/api/admin/security-config', {'login_max_attempts': '3'})
+        # 重新读取品牌配置
+        r = self.api(self.admin, '/api/admin/brand-config', method='GET')
+        test('H4. 品牌配置持久化', r and r.get('brand_name') == '持久化测试品牌', str(r.get('brand_name',''))[:50] if r else 'no resp')
+        # 重新读取安全配置
+        r = self.api(self.admin, '/api/admin/security-config', method='GET')
+        test('H4a. 安全配置持久化', r and r.get('login_max_attempts') == '3', str(r.get('login_max_attempts',''))[:50] if r else 'no resp')
+
+    def test_manifest_dynamic(self):
+        """验证 manifest.json 返回品牌配置"""
+        # 先修改品牌名称
+        self.api(self.admin, '/api/admin/brand-config', {'brand_name': 'Manifest测试名称', 'brand_primary_color': '#00cc66'})
+        # 获取 manifest.json
+        r = self.api(self.admin, '/manifest.json', method='GET')
+        test('H5. manifest name动态', r and r.get('name') == 'Manifest测试名称', str(r.get('name',''))[:50] if r else 'no resp')
+        test('H5a. manifest theme动态', r and r.get('theme_color') == '#00cc66', str(r.get('theme_color',''))[:50] if r else 'no resp')
+
+    # ========================================================================== #
     #  RUN ALL TESTS
     # ========================================================================== #
 
@@ -799,6 +858,18 @@ class SmartCSTest:
         self.test_very_long_message()
         self.test_no_session_access()
         self.test_404_page()
+
+        # ──────────────────────────────────────────────────────
+        # Group H: 配置管理系统 (v4.1)
+        # ──────────────────────────────────────────────────────
+        print("\n📋 H. 配置管理系统 (v4.1)")
+        # 确保管理员已登录
+        self.test_admin_login()
+        self.test_init_default_config()
+        self.test_brand_config_api()
+        self.test_security_config_api()
+        self.test_config_persist()
+        self.test_manifest_dynamic()
 
         # ──────────────────────────────────────────────────────
         # Summary

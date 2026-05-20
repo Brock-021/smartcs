@@ -273,3 +273,71 @@
 | 通过 | 所有 P0 需求测试 100% 通过，失败项 ≤ 3 |
 | 有条件通过 | P0 通过率 ≥ 90%，失败项 ≤ 5，无 Critical 缺陷 |
 | 不通过 | P0 通过率 < 90% 或存在 Critical 功能缺陷 |
+
+---
+
+## 6. v4.1 配置管理测试
+
+### 6.1 测试范围
+
+| 模块 | 测试项数 | 说明 |
+|------|---------|------|
+| 品牌配置 API | 3 | GET/POST/持久化验证 |
+| 安全配置 API | 3 | GET/POST/持久化验证 |
+| 初始默认值 | 1 | 启动时各配置项默认值 |
+| CSS 变量注入 | 1 | 模板中品牌配置是否正确传递 |
+| PWA 动态化 | 1 | manifest.json 返回品牌配置 |
+| **总计** | **9** | |
+
+### 6.2 测试用例
+
+#### 6.2.1 初始默认值校验
+
+| ID | 描述 | 步骤 | 期望结果 |
+|----|------|------|---------|
+| CFG-01 | 验证系统启动时配置默认值正确 | 启动系统，GET /api/admin/config | 返回所有配置项，默认值正确 |
+| CFG-02 | 验证品牌配置默认值 | GET /api/admin/brand-config | brand_name='SmartCS 智能客服', brand_primary_color='#1a73e8' |
+| CFG-03 | 验证安全配置默认值 | GET /api/admin/security-config | password_min_length='8', password_require_upper='true' |
+
+#### 6.2.2 品牌配置 API
+
+| ID | 描述 | 步骤 | 期望结果 |
+|----|------|------|---------|
+| CFG-04 | 修改品牌名称 | POST brand-config {brand_name:'测试品牌'} | ok=true |
+| CFG-05 | 修改主题色 | POST brand-config {brand_primary_color:'#ff6600'} | ok=true |
+| CFG-06 | 验证修改持久化 | GET brand-config → 再次重启后读取 | 值保持修改后的内容 |
+
+#### 6.2.3 安全配置 API
+
+| ID | 描述 | 步骤 | 期望结果 |
+|----|------|------|---------|
+| CFG-07 | 修改密码最小长度 | POST security-config {password_min_length:'12'} | ok=true |
+| CFG-08 | 修改登录限制 | POST security-config {login_max_attempts:'3'} | ok=true |
+| CFG-09 | 验证修改持久化 | 修改后重新读取 | 值一致 |
+
+#### 6.2.4 PWA 动态化
+
+| ID | 描述 | 步骤 | 期望结果 |
+|----|------|------|---------|
+| CFG-10 | 验证 manifest.json 返回品牌配置 | 修改品牌名称后 GET /manifest.json | name 字段为修改后的品牌名称 |
+| CFG-11 | 验证 sw.js 返回品牌配置 | 修改品牌简称后 GET /sw.js | 缓存名称含新的品牌简称 |
+
+### 6.3 测试策略
+
+#### 自动化测试
+
+在 `test_smartcs_full.py` 中新增 `test_config_system` 类，包含以下测试方法：
+
+| 方法名 | 测试内容 |
+|--------|---------|
+| `test_init_default_config` | 验证启动时默认配置值正确 |
+| `test_brand_config_api` | 品牌配置 GET/POST API 功能 |
+| `test_security_config_api` | 安全配置 GET/POST API 功能 |
+| `test_config_persist` | 配置持久化验证 |
+| `test_manifest_dynamic` | manifest.json 动态读取品牌配置 |
+
+#### 权限验证
+
+- 品牌配置 API 需系统管理员权限
+- 安全配置 API 需安全管理员权限
+- 普通用户访问应返回权限错误

@@ -22,8 +22,20 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'smart-cs-secret-2026')
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
-app.config.update(JSON_AS_ASCII=False, TEMPLATES_AUTO_RELOAD=True, MAX_CONTENT_LENGTH=50*1024*1024)
-app.config.update(PERMANENT_SESSION_LIFETIME=28800)  # 8 小时
+def _sync_app_config_from_db():
+    """Sync Flask app config from system_config table"""
+    try:
+        cfg = get_system_config()
+        sl = int(cfg.get('session_lifetime', '28800'))
+        app.config['PERMANENT_SESSION_LIFETIME'] = sl
+        mu = int(cfg.get('max_upload_size_mb', '50'))
+        app.config['MAX_CONTENT_LENGTH'] = mu * 1024 * 1024
+    except:
+        pass
+
+app.config.update(JSON_AS_ASCII=False, TEMPLATES_AUTO_RELOAD=True)
+app.config.update(PERMANENT_SESSION_LIFETIME=28800)  # 启动默认值
+app.config.update(MAX_CONTENT_LENGTH=50*1024*1024)   # 启动默认值
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 @app.before_request
@@ -31,13 +43,55 @@ def check_session_timeout():
     if session.get('agent_id') and request.endpoint and not request.endpoint.startswith('static'):
         now = datetime.now().timestamp()
         last_activity = session.get('last_activity', now)
-        if now - last_activity > 1800:  # 30 分钟空闲超时
+        cfg = get_system_config()
+        idle_timeout = int(cfg.get('session_idle_timeout', '1800'))
+        if now - last_activity > idle_timeout:
             session.clear()
             if request.is_json:
                 return jsonify({'error':'会话已超时，请重新登录','login_required':True}), 401
             return redirect('/agent/login')
         session['last_activity'] = now
 
+# ====== 品牌/系统配置缓存 ======
+_config_cache = {}
+_config_cache_time = 0
+
+def get_system_config():
+    """Get all system_config as dict with caching (5 min expiry)"""
+    global _config_cache, _config_cache_time
+    now = time.time()
+    if _config_cache and (now - _config_cache_time) < 300:
+        return _config_cache
+    try:
+        rows = get_db().execute("SELECT key, value FROM system_config").fetchall()
+        _config_cache = {r['key']: r['value'] for r in rows}
+        _config_cache_time = now
+    except:
+        pass
+    return _config_cache
+
+def get_brand_config():
+    """Get brand-related config values for templates"""
+    cfg = get_system_config()
+    return {
+        'brand_name': cfg.get('brand_name', 'SmartCS 智能客服'),
+        'brand_short': cfg.get('brand_short', 'SmartCS'),
+        'brand_primary_color': cfg.get('brand_primary_color', '#1a73e8'),
+        'brand_logo_path': cfg.get('brand_logo_path', '/static/icon-192.png'),
+        'brand_favicon_path': cfg.get('brand_favicon_path', '/static/favicon.ico'),
+    }
+
+def invalidate_config_cache():
+    """Invalidate config cache after updates"""
+    global _config_cache, _config_cache_time
+    _config_cache = {}
+    _config_cache_time = 0
+
+@app.context_processor
+def inject_brand_config():
+    """Inject brand/system config into all templates"""
+    _sync_app_config_from_db()
+    return get_brand_config()
 
 
 def get_db():
@@ -543,7 +597,7 @@ def admin_delete_im_mapping(mid):
 def admin_list_im_messages():
     aid = request.args.get('adapter_id', '')
     page = int(request.args.get('page', 1))
-    limit = 50
+    limit = int(get_system_config().get('pagination_per_page', '50'))
     offset = (page - 1) * limit
     where = ['1=1']
     params = []
@@ -1131,6 +1185,26 @@ def init_db():
         ]
         for k, v in security_cfg:
             db.execute("INSERT OR IGNORE INTO system_config(key,value) VALUES(?,?)", (k, v))
+        # 品牌配置键
+        brand_cfg = [
+            ('brand_name', 'SmartCS 智能客服'),
+            ('brand_short', 'SmartCS'),
+            ('brand_primary_color', '#1a73e8'),
+            ('brand_logo_path', '/static/icon-192.png'),
+            ('brand_favicon_path', '/static/favicon.ico'),
+        ]
+        for k, v in brand_cfg:
+            db.execute("INSERT OR IGNORE INTO system_config(key,value) VALUES(?,?)", (k, v))
+        # 系统行为配置键
+        sys_behavior_cfg = [
+            ('session_lifetime', '28800'),
+            ('session_idle_timeout', '1800'),
+            ('auto_check_interval', '300'),
+            ('pagination_per_page', '50'),
+            ('max_upload_size_mb', '50'),
+        ]
+        for k, v in sys_behavior_cfg:
+            db.execute("INSERT OR IGNORE INTO system_config(key,value) VALUES(?,?)", (k, v))
         db.commit()
 init_db()
 
@@ -1379,22 +1453,25 @@ def customer_register_page():
 
 @app.route('/manifest.json')
 def manifest():
+    cfg = get_brand_config()
     return jsonify({
-        "name": "SmartCS 智能客服",
-        "short_name": "SmartCS",
+        "name": cfg.get('brand_name', 'SmartCS 智能客服'),
+        "short_name": cfg.get('brand_short', 'SmartCS'),
         "start_url": "/",
         "display": "standalone",
         "orientation": "portrait",
-        "background_color": "#1a73e8",
-        "theme_color": "#1a73e8",
-        "icons": [{"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png"}]
+        "background_color": cfg.get('brand_primary_color', '#1a73e8'),
+        "theme_color": cfg.get('brand_primary_color', '#1a73e8'),
+        "icons": [{"src": cfg.get('brand_logo_path', '/static/icon-192.png'), "sizes": "192x192", "type": "image/png"}]
     })
 
 @app.route('/sw.js')
 def service_worker():
-    sw_content = '''const CACHE_NAME = 'smartcs-v2';
+    cfg = get_brand_config()
+    logo_path = cfg.get('brand_logo_path', '/static/icon-192.png')
+    sw_content = """const CACHE_NAME = 'smartcs-v2';
 const urlsToCache = [
-  '/static/icon-192.png'
+  '%s'
 ];
 
 self.addEventListener('install', function(event) {
@@ -1438,7 +1515,7 @@ self.addEventListener('activate', function(event) {
       );
     })
   );
-});'''
+});""" % logo_path
     return Response(sw_content, mimetype='application/javascript',
                   headers={'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/'})
 
@@ -2420,7 +2497,7 @@ def admin_delete_customer(cid):
 def admin_audit_logs():
     db = get_db()
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 50, type=int)
+    per_page = request.args.get('per_page', int(get_system_config().get('pagination_per_page', '50')), type=int)
     actor_id = request.args.get('actor_id', '')
     action = request.args.get('action', '')
     start_date = request.args.get('start_date', '')
@@ -2642,6 +2719,7 @@ def admin_config():
             elif r['key'] == 'api_base_url': API_BASE_URL = r['value']
             elif r['key'] == 'model_name': MODEL_NAME = r['value']
             elif r['key'] == 'admin_password': ADMIN_PASSWORD = r['value']
+        invalidate_config_cache()
         return jsonify({'ok':True})
     configs = get_db().execute("SELECT key,value FROM system_config").fetchall()
     return jsonify({c['key']:c['value'] for c in configs})
@@ -2666,6 +2744,30 @@ def admin_security_config():
     result = {}
     for c in configs:
         if c['key'] in SECURITY_CONFIG_KEYS:
+            result[c['key']] = c['value']
+    return jsonify(result)
+
+# ====== 品牌配置管理 ======
+BRAND_CONFIG_KEYS = {'brand_name','brand_short','brand_primary_color','brand_logo_path','brand_favicon_path'}
+
+@app.route('/api/admin/brand-config', methods=['GET','POST'])
+@sysadmin_required
+def admin_brand_config():
+    if request.method == 'POST':
+        data = request.get_json()
+        db = get_db()
+        for k, v in data.items():
+            if k in BRAND_CONFIG_KEYS:
+                db.execute("INSERT OR REPLACE INTO system_config(key,value,updated_at) VALUES(?,?,datetime('now','localtime'))", (k, str(v)))
+        db.commit()
+        invalidate_config_cache()
+        log_audit('', 'admin.brand_config.update', session.get('agent_id',''), session.get('agent_name',''),
+                  {'keys_updated': list(data.keys())})
+        return jsonify({'ok':True})
+    configs = get_db().execute("SELECT key,value FROM system_config").fetchall()
+    result = {}
+    for c in configs:
+        if c['key'] in BRAND_CONFIG_KEYS:
             result[c['key']] = c['value']
     return jsonify(result)
 
@@ -4240,7 +4342,7 @@ class OidcProvider(AuthProvider):
     def get_login_html(self) -> str:
         return f'''<div style="text-align:center;margin:16px 0">
             <a href="/api/auth/oidc/login/{self.config.get('_id','')}"
-               style="display:inline-block;padding:12px 32px;background:#1a73e8;color:#fff;
+               style="display:inline-block;padding:12px 32px;background:var(--primary-color);color:#fff;
                       border-radius:8px;text-decoration:none;font-size:14px;">
                🔑 SSO 企业账号登录
             </a>
@@ -4629,7 +4731,9 @@ def start_timeout_checker(app_ref):
     """Start background thread for periodic timeout checks"""
     def checker():
         while True:
-            time.sleep(300)  # Check every 5 minutes
+            cfg = get_system_config()
+            interval = int(cfg.get('auto_check_interval', '300'))
+            time.sleep(interval)
             _auto_timeout_check(app_ref)
     t = threading.Thread(target=checker, daemon=True)
     t.start()

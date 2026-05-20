@@ -1551,3 +1551,85 @@ service_tickets（主表）
 **文档维护人：** 旺财  
 **最后更新：** 2026-05-20 14:28  
 **下一轮评审：** 主人确认状态机设计后更新
+
+---
+
+## 十三、v4.1 配置管理系统需求
+
+### 13.1 需求概述
+
+v4.1 引入后台可配置系统，将系统名称、主题色、Logo、安全策略、会话超时等硬编码参数全部改为从 `system_config` 表读取，管理员可通过管理后台可视化编辑。
+
+### 13.2 品牌配置
+
+**需求编号：** F-CONFIG-BRAND
+**优先级：** P1
+**描述：** 管理员可在后台实时修改系统品牌信息。
+
+| 配置项 | 数据类型 | 默认值 | 说明 |
+|--------|---------|--------|------|
+| `brand_name` | 字符串 | `SmartCS 智能客服` | 页面标题、PWA 名称 |
+| `brand_short` | 字符串 | `SmartCS` | 短名称，Service Worker 缓存标识 |
+| `brand_primary_color` | 字符串 | `#1a73e8` | 主题色 hex 值 |
+| `brand_logo_path` | 字符串 | `/static/icon-192.png` | Logo 图片路径 |
+| `brand_favicon_path` | 字符串 | `/static/favicon.ico` | Favicon 路径 |
+
+**验收标准：**
+- [x] GET `/api/admin/brand-config` 返回当前品牌配置
+- [x] POST `/api/admin/brand-config` 可修改品牌配置
+- [x] 修改后所有页面标题即时更新
+- [x] 修改后所有主题色即时更新（CSS 变量）
+- [x] PWA manifest.json 和 sw.js 动态读取品牌配置
+- [x] 修改操作记录审计日志
+
+### 13.3 安全配置
+
+**需求编号：** F-CONFIG-SECURITY
+**优先级：** P1
+**描述：** 管理员可配置密码策略和登录安全限制。
+
+| 配置项 | 数据类型 | 默认值 | 说明 |
+|--------|---------|--------|------|
+| `password_min_length` | 整数 | `8` | 密码最小长度 |
+| `password_require_upper` | 布尔 | `true` | 是否要求大写字母 |
+| `password_expire_days` | 整数 | `90` | 密码过期天数（预留） |
+| `login_max_attempts` | 整数 | `5` | 登录失败最大尝试次数 |
+| `login_lockout_minutes` | 整数 | `15` | 锁定持续时间（分钟） |
+| `audit_log_retention_days` | 整数 | `365` | 审计日志保留天数 |
+
+**验收标准：**
+- [x] GET `/api/admin/security-config` 返回当前安全配置（仅安全管理员可访问）
+- [x] POST `/api/admin/security-config` 可修改安全配置（仅安全管理员）
+- [x] 密码策略即时生效于新密码设置
+- [x] 操作记录审计日志
+
+### 13.4 系统行为配置
+
+**需求编号：** F-CONFIG-BEHAVIOR
+**优先级：** P2
+**描述：** 会话生命周期、空闲超时、分页大小、上传限制等行为参数全部从 `system_config` 表读取。
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `session_lifetime` | `28800`（8小时） | 会话生命周期（秒） |
+| `session_idle_timeout` | `1800`（30分钟） | 空闲超时（秒） |
+| `auto_check_interval` | `300`（5分钟） | 自动检查间隔（秒） |
+| `pagination_per_page` | `50` | 列表分页大小 |
+| `max_upload_size_mb` | `50` | 上传文件大小限制（MB） |
+
+**验收标准：**
+- [x] 所有配置从 `system_config` 表读取
+- [x] `@app.before_request` 接管超时检查
+- [x] `_sync_app_config_from_db()` 同步 Flask 容器配置
+
+### 13.5 CSS 变量化
+
+**需求编号：** F-CONFIG-CSS
+**优先级：** P1
+**描述：** 所有硬编码主题色替换为 CSS 变量，品牌配置修改后全站颜色一致更新。
+
+**验收标准：**
+- [x] 所有 6 个模板使用 `var(--primary-color)` 替代硬编码 `#1a73e8`
+- [x] 品牌配置通过 `context_processor` 注入模板
+- [x] 模板中通过 `<style>:root { --brand-primary-color: '{{ brand_primary_color }}' }</style>` 注入当前值
+- [x] 修改品牌配置后刷新页面即可看到颜色变化

@@ -1,10 +1,11 @@
-# SmartCS 智能客服系统 v4.0
+# SmartCS 智能客服系统 v4.1
 
-> 基于 Python Flask 的全功能智能客服工单管理系统，支持 AI 自动应答、人工客服、工单流转、多平台集成。
+> 基于 Python Flask 的全功能智能客服工单管理系统，支持 AI 自动应答、人工客服、工单流转、多平台集成、品牌自定义、安全策略配置。
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue)
 ![Flask](https://img.shields.io/badge/Flask-3.0-green)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
+![Version](https://img.shields.io/badge/Version-4.1-brightgreen)
 
 ---
 
@@ -33,6 +34,18 @@
 - **OIDC** — 单点登录 (Keycloak 等)
 - **Jira/禅道** — 缺陷自动提交
 - **Webhook** — 工单状态变更通知
+
+### 🎨 品牌自定义
+- **品牌名称** — 系统名称、简称后台可配置
+- **主题色** — 全站主色调 CSS 变量化，一处修改全局生效
+- **Logo 配置** — Logo 图片路径、Favicon 路径可配
+- **PWA 动态化** — manifest.json、Service Worker 从数据库读取品牌配置
+
+### 🔒 安全策略
+- **密码策略** — 最小长度、大小写要求、过期天数可配
+- **登录限制** — 失败次数、锁定时间可配
+- **审计保留** — 审计日志保留天数可配
+- **会话管理** — 会话生命周期、空闲超时全部配置化
 
 ### 📱 移动端支持
 - **PWA 支持** — 可添加到桌面，支持离线缓存

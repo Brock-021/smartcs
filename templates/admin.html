@@ -6,20 +6,25 @@
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SmartCS">
-<title>后台管理 - SmartCS v4</title>
+<meta name="apple-mobile-web-app-title" content="{{ brand_short }}">
+<title>后台管理 - {{ brand_name }}</title>
 <style>
+:root {
+  --primary-color: {{ brand_primary_color }};
+  --primary-dark: #0d47a1;
+  --primary-darker: #1557b0;
+}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f0f2f5;min-height:100vh}
-.header{background:linear-gradient(135deg,#1a73e8 0%,#0d47a1 100%);color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.header{background:linear-gradient(135deg,var(--primary-color) 0%,var(--primary-dark) 100%);color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
 .header h1{font-size:18px;font-weight:500}
 .header .user{display:flex;align-items:center;gap:12px;font-size:13px}
 .header .user button{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px}
 .header .user a{color:rgba(255,255,255,0.8);font-size:12px;text-decoration:none}
 .nav-tabs{background:#fff;display:flex;border-bottom:2px solid #e0e0e0;padding:0 24px;position:sticky;top:50px;z-index:49}
 .nav-tabs .tab{padding:12px 20px;font-size:14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:#666;transition:all .2s}
-.nav-tabs .tab:hover{color:#1a73e8}
-.nav-tabs .tab.active{color:#1a73e8;border-bottom-color:#1a73e8;font-weight:500}
+.nav-tabs .tab:hover{color:var(--primary-color)}
+.nav-tabs .tab.active{color:var(--primary-color);border-bottom-color:var(--primary-color);font-weight:500}
 .nav-tabs .tab .count{background:#ff5252;color:#fff;font-size:11px;padding:0 7px;border-radius:8px;margin-left:4px}
 .content{padding:20px 24px;display:none}
 .content.active{display:block}
@@ -28,8 +33,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .card-body{padding:16px 18px}
 .search-bar{display:flex;gap:10px;margin-bottom:14px}
 .search-bar input{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none}
-.search-bar input:focus{border-color:#1a73e8}
-.search-bar button{padding:8px 16px;background:#1a73e8;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px}
+.search-bar input:focus{border-color:var(--primary-color)}
+.search-bar button{padding:8px 16px;background:var(--primary-color);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 table th{padding:10px 12px;background:#f8f9fa;color:#555;text-align:left;font-weight:500;border-bottom:2px solid #e0e0e0;white-space:nowrap}
 table td{padding:10px 12px;border-bottom:1px solid #f0f0f0;color:#333}
@@ -37,18 +42,18 @@ table tr:hover{background:#f8f9fa}
 table tr.cursor-pointer{cursor:pointer}
 .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;color:#fff}
 .bg-open{background:#ff9800}
-.bg-assigned{background:#1a73e8}
+.bg-assigned{background:var(--primary-color)}
 .bg-closed{background:#999}
 .bg-resolved{background:#43a047}
 .bg-confirmed{background:#43a047}
 .status-text{font-size:13px;color:#666;padding:10px 0;text-align:center}
 .pagination{display:flex;justify-content:center;gap:6px;padding:14px 0}
 .pagination button{padding:6px 12px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:#333}
-.pagination button.active{background:#1a73e8;color:#fff;border-color:#1a73e8}
+.pagination button.active{background:var(--primary-color);color:#fff;border-color:var(--primary-color)}
 .pagination button:disabled{opacity:.4;cursor:default}
 .stats-row{display:flex;gap:14px;margin-bottom:16px}
 .stat-card{flex:1;background:#fff;border-radius:10px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
-.stat-card .num{font-size:28px;font-weight:700;color:#1a73e8}
+.stat-card .num{font-size:28px;font-weight:700;color:var(--primary-color)}
 .stat-card .label{font-size:12px;color:#888;margin-top:4px}
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:100;display:none;align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
@@ -59,10 +64,10 @@ table tr.cursor-pointer{cursor:pointer}
 .modal .row label{display:block;font-size:12px;color:#888;margin-bottom:3px}
 .modal .row .val{font-size:14px;color:#333;padding:6px 0}
 .modal input,.modal textarea,.modal select{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:10px}
-.modal input:focus,.modal textarea:focus{border-color:#1a73e8}
+.modal input:focus,.modal textarea:focus{border-color:var(--primary-color)}
 .modal .btn-bar{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 .modal .btn-bar button{padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13px}
-.modal .btn-primary{background:#1a73e8;color:#fff}
+.modal .btn-primary{background:var(--primary-color);color:#fff}
 .modal .btn-danger{background:#ff5252;color:#fff}
 .modal .btn-cancel{background:#f0f0f0;color:#333}
 .detail-section{margin-bottom:12px}
@@ -71,10 +76,10 @@ table tr.cursor-pointer{cursor:pointer}
 .ticket-row-info{font-size:12px;color:#555;line-height:1.8}
 .config-form label{display:block;font-size:13px;color:#555;margin-bottom:4px;font-weight:500}
 .config-form input{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;margin-bottom:14px;font-family:monospace}
-.config-form input:focus{border-color:#1a73e8}
+.config-form input:focus{border-color:var(--primary-color)}
 .config-form .hint{font-size:11px;color:#999;margin-top:-10px;margin-bottom:14px}
-.config-form .save-btn{padding:10px 28px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;transition:all .2s}
-.config-form .save-btn:hover{background:#1557b0}
+.config-form .save-btn{padding:10px 28px;background:var(--primary-color);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;transition:all .2s}
+.config-form .save-btn:hover{background:var(--primary-darker)}
 .config-form .save-btn:disabled{opacity:.5;cursor:not-allowed}
 .reason-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0}
 .reason-row .name{flex:1;font-size:13px}
@@ -82,8 +87,8 @@ table tr.cursor-pointer{cursor:pointer}
 .reason-row button{padding:4px 10px;background:#ff5252;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px}
 .add-reason-bar{display:flex;gap:8px;margin-top:10px}
 .add-reason-bar input{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none}
-.add-reason-bar input:focus{border-color:#1a73e8}
-.add-reason-bar button{padding:8px 16px;background:#1a73e8;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px}
+.add-reason-bar input:focus{border-color:var(--primary-color)}
+.add-reason-bar button{padding:8px 16px;background:var(--primary-color);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px}
 
 /* ===== 移动端响应式 (<768px) ===== */
 @media(max-width:767px){
@@ -97,7 +102,7 @@ table tr.cursor-pointer{cursor:pointer}
   .nav-tabs{flex-direction:column;padding:0;overflow-y:auto;max-height:0;transition:max-height .3s ease;position:fixed;top:50px;left:0;right:0;z-index:100;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
   .nav-tabs.open{max-height:80vh}
   .nav-tabs .tab{padding:12px 16px;border-bottom:1px solid #f0f0f0}
-  .nav-tabs .tab.active{border-bottom-color:#1a73e8;border-left:3px solid #1a73e8}
+  .nav-tabs .tab.active{border-bottom-color:var(--primary-color);border-left:3px solid var(--primary-color)}
   /* 内容区 */
   .content{padding:12px 10px}
   .card-header{font-size:13px;padding:10px 12px;flex-wrap:wrap;gap:6px}
@@ -139,7 +144,7 @@ table tr.cursor-pointer{cursor:pointer}
 </head>
 <body>
 <div class="header">
-  <h1>⚙️ SmartCS 后台管理</h1>
+  <h1>⚙️ {{ brand_name }} 后台管理</h1>
   <div class="user">
     <span>{{ agent_name }}</span>
     <a href="/agent/dashboard">📋 客服工作台</a>
@@ -161,6 +166,8 @@ table tr.cursor-pointer{cursor:pointer}
   <div class="tab" id="tabKnowledge" data-page="knowledge" onclick="switchPage('knowledge',this)">📚 知识库</div>
   <div class="tab" id="tabLoginLogs" data-page="loginlogs" onclick="switchPage('loginlogs',this)">🔑 登录日志</div>
   <div class="tab" id="tabAuth" data-page="auth" onclick="switchPage('auth',this)">🔐 认证管理</div>
+  <div class="tab" id="tabBrand" data-page="brand" onclick="switchPage('brand',this)">🎨 品牌配置</div>
+  <div class="tab" id="tabSecurity" data-page="security" onclick="switchPage('security',this)">🔒 安全配置</div>
   <div class="tab" id="tabAudit" data-page="audit" onclick="switchPage('audit',this)">📋 审计日志</div>
 </div>
 
@@ -207,7 +214,7 @@ table tr.cursor-pointer{cursor:pointer}
 
 <div class="content" id="pageAgents">
   <div class="card">
-    <div class="card-header"><span>客服人员</span><button onclick="showAddAgent()" style="background:#1a73e8;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 添加客服</button></div>
+    <div class="card-header"><span>客服人员</span><button onclick="showAddAgent()" style="background:var(--primary-color);color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 添加客服</button></div>
     <div class="card-body" style="padding:0;overflow-x:auto">
       <table id="agentTable"><tr><td colspan="11" class="status-text">加载中...</td></tr></table>
     </div>
@@ -271,7 +278,7 @@ table tr.cursor-pointer{cursor:pointer}
 
 <div class="content" id="pageUpgrades">
   <div class="card">
-    <div class="card-header"><span>📋 系统升级记录</span><button onclick="showAddUpgrade()" style="background:#1a73e8;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 添加记录</button></div>
+    <div class="card-header"><span>📋 系统升级记录</span><button onclick="showAddUpgrade()" style="background:var(--primary-color);color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 添加记录</button></div>
     <div class="card-body" style="overflow-x:auto">
       <table id="upgradeTable">
         <tr><th>版本号</th><th>发布日期</th><th>升级内容</th><th>记录时间</th><th>操作</th></tr>
@@ -283,7 +290,7 @@ table tr.cursor-pointer{cursor:pointer}
 
 <div class="content" id="pageSystems">
   <div class="card">
-    <div class="card-header"><span>🔧 负责系统管理</span><button onclick="showAddSystem()" style="background:#1a73e8;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 添加系统</button></div>
+    <div class="card-header"><span>🔧 负责系统管理</span><button onclick="showAddSystem()" style="background:var(--primary-color);color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 添加系统</button></div>
     <div class="card-body">
       <table id="systemTable" style="margin-bottom:16px">
         <tr><th>系统名称</th><th>描述</th><th>负责客服</th><th>操作</th></tr>
@@ -660,7 +667,7 @@ table tr.cursor-pointer{cursor:pointer}
         <span class="kb-subtab" onclick="switchKbTab('pending',this)" style="cursor:pointer;padding:4px 12px;border-radius:6px;background:#f5f5f5;color:#666;font-size:12px">待审核</span>
         <span class="kb-subtab" onclick="switchKbTab('rejected',this)" style="cursor:pointer;padding:4px 12px;border-radius:6px;background:#f5f5f5;color:#666;font-size:12px">已驳回</span>
       </div>
-      <button onclick="showKbForm()" style="background:#1a73e8;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:auto">+ 新增</button>
+      <button onclick="showKbForm()" style="background:var(--primary-color);color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:auto">+ 新增</button>
     </div>
     <div class="card-body" style="padding:0;overflow-x:auto">
       <!-- 已入库视图 -->
@@ -723,6 +730,81 @@ table tr.cursor-pointer{cursor:pointer}
     <div class="btns">
       <button class="cancel" onclick="document.getElementById('kbRejectOverlay').classList.remove('show')">取消</button>
       <button class="confirm" onclick="confirmRejectKb()" style="background:#e53935;color:#fff">确认驳回</button>
+    </div>
+  </div>
+</div>
+
+<div class="content" id="pageBrand">
+  <div class="card">
+    <div class="card-header"><span>🎨 品牌配置</span></div>
+    <div class="card-body config-form">
+      <label>品牌名称</label>
+      <input type="text" id="brandName" placeholder="SmartCS 智能客服">
+      <div class="hint">系统名称，显示在标题栏和页面头部</div>
+
+      <label>品牌简称</label>
+      <input type="text" id="brandShort" placeholder="SmartCS">
+      <div class="hint">显示在移动端书签和应用标题中</div>
+
+      <label>主题色</label>
+      <input type="color" id="brandColor" style="width:60px;height:40px;padding:2px;cursor:pointer" onchange="document.getElementById('brandColorPreview').style.background=this.value">
+      <div class="hint">选择主题颜色，将在整个系统中使用</div>
+
+      <label>Logo 地址</label>
+      <input type="text" id="brandLogoPath" placeholder="/static/icon-192.png">
+      <div class="hint">Logo 图片路径（相对或绝对路径），支持 PNG/SVG</div>
+
+      <label>Favicon 地址</label>
+      <input type="text" id="brandFaviconPath" placeholder="/static/favicon.ico">
+      <div class="hint">浏览器标签页图标路径</div>
+
+      <div style="margin:16px 0;padding:16px;border:2px dashed #ddd;border-radius:10px;text-align:center">
+        <div style="font-size:13px;color:#888;margin-bottom:10px">🎨 预览区域</div>
+        <div id="brandColorPreview" style="width:60px;height:60px;border-radius:50%;margin:0 auto 10px;background:var(--primary-color);box-shadow:0 2px 8px rgba(0,0,0,0.1)"></div>
+        <div id="brandPreviewLogo" style="margin:0 auto 8px;width:48px;height:48px"><img id="brandLogoPreviewImg" src="/static/icon-192.png" style="max-width:48px;max-height:48px"></div>
+        <div style="font-size:16px;font-weight:600;color:var(--primary-color)" id="brandPreviewName">{{ brand_name }}</div>
+        <div style="font-size:12px;color:#888" id="brandPreviewShort">{{ brand_short }}</div>
+      </div>
+
+      <button class="save-btn" onclick="saveBrandConfig()">💾 保存品牌配置</button>
+      <span id="brandConfigStatus" style="font-size:12px;color:#43a047;margin-left:12px;display:none">✅ 已保存</span>
+    </div>
+  </div>
+</div>
+
+<div class="content" id="pageSecurity">
+  <div class="card">
+    <div class="card-header"><span>🔒 安全配置</span></div>
+    <div class="card-body config-form">
+      <label>密码最小长度</label>
+      <input type="number" id="secPasswordMinLength" placeholder="8" min="4" max="32">
+      <div class="hint">客服/管理员密码的最小字符数（4-32）</div>
+
+      <label>要求包含大写字母</label>
+      <select id="secPasswordRequireUpper" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;margin-bottom:14px;font-family:inherit">
+        <option value="true">是</option>
+        <option value="false">否</option>
+      </select>
+      <div class="hint">密码中是否需要至少一个大写字母</div>
+
+      <label>密码过期天数</label>
+      <input type="number" id="secPasswordExpireDays" placeholder="90" min="0" max="365">
+      <div class="hint">密码有效期（天），0 表示永不过期</div>
+
+      <label>登录最大尝试次数</label>
+      <input type="number" id="secLoginMaxAttempts" placeholder="5" min="1" max="20">
+      <div class="hint">连续登录失败达到此次数后锁定账号</div>
+
+      <label>锁定时间（分钟）</label>
+      <input type="number" id="secLoginLockoutMinutes" placeholder="15" min="1" max="1440">
+      <div class="hint">账号被锁定后，自动解锁所需时间</div>
+
+      <label>审计日志保留天数</label>
+      <input type="number" id="secAuditLogRetentionDays" placeholder="365" min="30" max="3650">
+      <div class="hint">审计日志的保留期限，超期日志将被清理</div>
+
+      <button class="save-btn" onclick="saveSecurityConfig()">💾 保存安全配置</button>
+      <span id="securityConfigStatus" style="font-size:12px;color:#43a047;margin-left:12px;display:none">✅ 已保存</span>
     </div>
   </div>
 </div>
@@ -804,12 +886,13 @@ table tr.cursor-pointer{cursor:pointer}
 <script>
 var currentPage = 'tickets';
 var currentUserRole = '{{ agent_role }}' || '';
+var PRIMARY_COLOR = '{{ brand_primary_color }}';
 
 // 角色权限控制：仅保留当前角色可访问的标签
 var roleTabMapping = {
-  'sysadmin':  ['tickets','stats','users','agents','config','reasons','upgrades','systems','webhooks','analytics','knowledge','auth'],
-  'superadmin': ['tickets','stats','users','agents','config','reasons','upgrades','systems','webhooks','analytics','knowledge','auth','loginlogs','audit'],
-  'secadmin':   ['auth','loginlogs'],
+  'sysadmin':  ['tickets','stats','users','agents','config','reasons','upgrades','systems','webhooks','analytics','knowledge','auth','brand','security'],
+  'superadmin': ['tickets','stats','users','agents','config','reasons','upgrades','systems','webhooks','analytics','knowledge','auth','brand','security','loginlogs','audit'],
+  'secadmin':   ['auth','loginlogs','security'],
   'audadmin':   ['audit','loginlogs','stats','analytics'],
 };
 
@@ -861,6 +944,8 @@ function switchPage(page, el) {
   if (page === 'loginlogs') loadLoginLogs();
   if (page === 'analytics') loadAnalytics();
   if (page === 'knowledge') { loadKnowledgeBase(); loadKnowledgePending(); loadKnowledgeRejected(); }
+  if (page === 'brand') loadBrandConfig();
+  if (page === 'security') loadSecurityConfig();
 }
 
 function logout() {
@@ -914,7 +999,7 @@ function loadKnowledgeBase() {
         if (!tagHtml) tagHtml = '<span style="color:#bbb;font-size:11px">-</span>';
         var vcount = it.version_count || 0;
         var versionBtn = vcount > 0
-          ? '<button class="btn btn-sm" onclick="showKbHistory(\'' + it.id + '\')" style="padding:2px 6px;font-size:10px;background:#f0f4ff;color:#1a73e8;border:1px solid #bbdefb;border-radius:4px;cursor:pointer;margin-right:2px" title="版本历史(' + vcount + ')">\uD83D\uDD0D ' + vcount + '</button>'
+          ? '<button class="btn btn-sm" onclick="showKbHistory(\'' + it.id + '\')" style="padding:2px 6px;font-size:10px;background:#f0f4ff;color:' + PRIMARY_COLOR + ';border:1px solid #bbdefb;border-radius:4px;cursor:pointer;margin-right:2px" title="版本历史(' + vcount + ')">\uD83D\uDD0D ' + vcount + '</button>'
           : '';
         h += '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 6px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(jn) +
           '</td><td style="padding:8px 6px">' + tagHtml +
@@ -1158,7 +1243,7 @@ function loadKnowledgePending() {
           '</td><td style="padding:8px 6px">' + escapeHtml(submitter) +
           '</td><td style="padding:8px 6px;color:#999;font-size:11px">' + (it.created_at||'').substring(0,16) +
           '</td><td style="padding:8px 6px;text-align:center;white-space:nowrap">' +
-          '<button onclick="previewKb(' + it.id + ')" style="padding:3px 8px;font-size:11px;margin:1px;background:#f0f4ff;color:#1a73e8;border:1px solid #bbdefb;border-radius:4px;cursor:pointer">\uD83D\uDC40 预览</button>' +
+          '<button onclick="previewKb(' + it.id + ')" style="padding:3px 8px;font-size:11px;margin:1px;background:#f0f4ff;color:' + PRIMARY_COLOR + ';border:1px solid #bbdefb;border-radius:4px;cursor:pointer">\uD83D\uDC40 预览</button>' +
           '<button onclick="approveKb(' + it.id + ')" style="padding:3px 8px;font-size:11px;margin:1px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:4px;cursor:pointer">通过 \u2705</button>' +
           '<button onclick="rejectKb(' + it.id + ')" style="padding:3px 8px;font-size:11px;margin:1px;background:#ffebee;color:#c62828;border:1px solid #ffcdd2;border-radius:4px;cursor:pointer">驳回 \u274C</button>' +
           '</td></tr>';
@@ -1377,10 +1462,10 @@ function renderSystems(systems) {
   var html = '<tr><th>系统名称</th><th>描述</th><th>负责客服</th><th>操作</th></tr>';
   systems.forEach(function(s) {
     html += '<tr>' +
-      '<td><span class="badge bg-assigned" style="background:#1a73e8">' + s.name.replace(/</g,'&lt;') + '</span></td>' +
+      '<td><span class="badge bg-assigned" style="background:' + PRIMARY_COLOR + '">' + s.name.replace(/</g,'&lt;') + '</span></td>' +
       '<td>' + (s.description || '-') + '</td>' +
       '<td id="sysAgents_' + s.id + '">加载中...</td>' +
-      '<td><button class="sys-edit-btn" data-id="' + s.id + '" data-name="' + s.name.replace(/'/g,"\'") + '" data-desc="' + (s.description||'').replace(/'/g,"\'") + '" style="background:none;border:none;color:#1a73e8;cursor:pointer;font-size:12px;margin-right:8px">✏️ 编辑</button>' +
+      '<td><button class="sys-edit-btn" data-id="' + s.id + '" data-name="' + s.name.replace(/'/g,"\'") + '" data-desc="' + (s.description||'').replace(/'/g,"\'") + '" style="background:none;border:none;color:' + PRIMARY_COLOR + ';cursor:pointer;font-size:12px;margin-right:8px">✏️ 编辑</button>' +
       '<button class="sys-delete-btn" data-id="' + s.id + '" style="background:none;border:none;color:#e53935;cursor:pointer;font-size:12px">🗑️ 删除</button></td></tr>';
   });
   tbody.innerHTML = html;
@@ -1426,7 +1511,7 @@ function renderAgentAssign(agents) {
         html += '<tr><td><b>' + (a.display_name||a.name) + '</b></td>';
         systems.forEach(function(s) {
           var checked = (a.systems || []).indexOf(s.name) >= 0;
-          html += '<td style="text-align:center"><input type="checkbox" data-agent="' + a.id + '" data-system="' + s.id + '" ' + (checked ? 'checked' : '') + '" style="accent-color:#1a73e8"></td>';
+          html += '<td style="text-align:center"><input type="checkbox" data-agent="' + a.id + '" data-system="' + s.id + '" ' + (checked ? 'checked' : '') + '" style="accent-color:' + PRIMARY_COLOR + '"></td>';
         });
         html += '</tr>';
       });
@@ -1622,7 +1707,7 @@ function renderTicketTable(tickets, page, pages) {
       '<td>'+(t.agent_display||t.agent_name||'-')+'</td>' +
       '<td class="stars">'+stars+'</td>' +
       '<td style="font-size:11px;color:#999">'+t.created_at.substring(5,16)+'</td>' +
-      '<td><button onclick="event.stopPropagation();showTicketDetail(\''+t.id+'\')" style="background:#1a73e8;color:#fff;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px">详情</button></td></tr>';
+      '<td><button onclick="event.stopPropagation();showTicketDetail(\''+t.id+'\')" style="background:' + PRIMARY_COLOR + ';color:#fff;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px">详情</button></td></tr>';
   }
   document.getElementById('ticketTable').innerHTML = html;
   var pp = '';
@@ -1737,7 +1822,7 @@ function loadUsers() {
           '<td>'+u.ticket_count+'</td>' +
           '<td style="font-size:11px;color:#999">'+u.created_at+'</td>' +
           '<td style="white-space:nowrap">' +
-            '<button onclick="event.stopPropagation();showUserDetail(\''+u.id+'\')" style="background:#1a73e8;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin:1px">详情</button>' +
+            '<button onclick="event.stopPropagation();showUserDetail(\''+u.id+'\')" style="background:' + PRIMARY_COLOR + ';color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin:1px">详情</button>' +
             '<button onclick="event.stopPropagation();showEditUserWithEmail(\''+u.id+'\',\''+(u.email||\'\')+'\',\''+encodeURIComponent(u.pname||u.name||\'\')+'\',\''+encodeURIComponent(u.employee_id||\'\')+'\',\''+encodeURIComponent(u.phone||\'\')+'\',\''+encodeURIComponent(u.company||\'\')+'\',\''+encodeURIComponent(u.department||\'\')+'\',\''+encodeURIComponent(u.notes||\'\')+'\')" style="background:#ff8f00;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin:1px">编辑</button>' +
             '<button onclick="event.stopPropagation();resetUserPassword(\''+u.id+'\')" style="background:#7b1fa2;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin:1px">重置密码</button>' +
             '<button onclick="event.stopPropagation();deleteUser(\''+u.id+'\',\''+encodeURIComponent(u.pname||u.name||u.id.substring(0,8))+'\')" style="background:#e53935;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin:1px">删除</button>' +
@@ -2128,6 +2213,106 @@ function saveConfig() {
   xhr.send(JSON.stringify(data));
 }
 
+// ====== 品牌配置 ======
+function loadBrandConfig() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/brand-config', true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      document.getElementById('brandName').value = d.brand_name || '';
+      document.getElementById('brandShort').value = d.brand_short || '';
+      document.getElementById('brandColor').value = d.brand_primary_color || '#1a73e8';
+      document.getElementById('brandLogoPath').value = d.brand_logo_path || '/static/icon-192.png';
+      document.getElementById('brandFaviconPath').value = d.brand_favicon_path || '/static/favicon.ico';
+      document.getElementById('brandColorPreview').style.background = d.brand_primary_color || '#1a73e8';
+      document.getElementById('brandPreviewName').style.color = d.brand_primary_color || '#1a73e8';
+      document.getElementById('brandPreviewName').textContent = d.brand_name || 'SmartCS 智能客服';
+      document.getElementById('brandPreviewShort').textContent = d.brand_short || 'SmartCS';
+      if (d.brand_logo_path) { document.getElementById('brandLogoPreviewImg').src = d.brand_logo_path; }
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function saveBrandConfig() {
+  var btn = document.querySelector('#pageBrand .save-btn');
+  btn.disabled = true; btn.textContent = '⏳ 保存中...';
+  var data = {
+    brand_name: document.getElementById('brandName').value.trim(),
+    brand_short: document.getElementById('brandShort').value.trim(),
+    brand_primary_color: document.getElementById('brandColor').value,
+    brand_logo_path: document.getElementById('brandLogoPath').value.trim(),
+    brand_favicon_path: document.getElementById('brandFaviconPath').value.trim(),
+  };
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/brand-config', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    btn.disabled = false; btn.textContent = '💾 保存品牌配置';
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        document.getElementById('brandConfigStatus').style.display = 'inline';
+        document.getElementById('brandConfigStatus').textContent = '✅ 已保存（请刷新页面查看效果）';
+        document.getElementById('brandColorPreview').style.background = data.brand_primary_color;
+        document.getElementById('brandPreviewName').style.color = data.brand_primary_color;
+        document.getElementById('brandPreviewName').textContent = data.brand_name || 'SmartCS 智能客服';
+        document.getElementById('brandPreviewShort').textContent = data.brand_short || 'SmartCS';
+        if (data.brand_logo_path) { document.getElementById('brandLogoPreviewImg').src = data.brand_logo_path; }
+      } else { alert('保存失败'); }
+    } catch(e) { alert('保存失败'); }
+  };
+  xhr.onerror = function() { btn.disabled = false; btn.textContent = '💾 保存品牌配置'; alert('网络错误'); };
+  xhr.send(JSON.stringify(data));
+}
+
+// ====== 安全配置 ======
+function loadSecurityConfig() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/security-config', true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      document.getElementById('secPasswordMinLength').value = d.password_min_length || '8';
+      document.getElementById('secPasswordRequireUpper').value = d.password_require_upper || 'true';
+      document.getElementById('secPasswordExpireDays').value = d.password_expire_days || '90';
+      document.getElementById('secLoginMaxAttempts').value = d.login_max_attempts || '5';
+      document.getElementById('secLoginLockoutMinutes').value = d.login_lockout_minutes || '15';
+      document.getElementById('secAuditLogRetentionDays').value = d.audit_log_retention_days || '365';
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function saveSecurityConfig() {
+  var btn = document.querySelector('#pageSecurity .save-btn');
+  btn.disabled = true; btn.textContent = '⏳ 保存中...';
+  var data = {
+    password_min_length: document.getElementById('secPasswordMinLength').value,
+    password_require_upper: document.getElementById('secPasswordRequireUpper').value,
+    password_expire_days: document.getElementById('secPasswordExpireDays').value,
+    login_max_attempts: document.getElementById('secLoginMaxAttempts').value,
+    login_lockout_minutes: document.getElementById('secLoginLockoutMinutes').value,
+    audit_log_retention_days: document.getElementById('secAuditLogRetentionDays').value,
+  };
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/security-config', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    btn.disabled = false; btn.textContent = '💾 保存安全配置';
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        document.getElementById('securityConfigStatus').style.display = 'inline';
+        document.getElementById('securityConfigStatus').textContent = '✅ 已保存';
+      } else { alert('保存失败'); }
+    } catch(e) { alert('保存失败'); }
+  };
+  xhr.onerror = function() { btn.disabled = false; btn.textContent = '💾 保存安全配置'; alert('网络错误'); };
+  xhr.send(JSON.stringify(data));
+}
+
 // ===== 关闭原因管理 =====
 function loadCloseReasons() {
   var xhr = new XMLHttpRequest();
@@ -2210,7 +2395,7 @@ function loadStats() {
         d.tickets_by_date.forEach(function(day) {
           var pct = Math.max(3, (day.count / maxVal) * 100);
           chart.innerHTML += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end">' +
-            '<div style="width:80%;background:linear-gradient(to top, #1a73e8, #64b5f6);border-radius:4px 4px 0 0;height:'+pct+'%;min-height:8px;transition:height 0.5s"></div>' +
+            '<div style="width:80%;background:linear-gradient(to top, ' + PRIMARY_COLOR + ', #64b5f6);border-radius:4px 4px 0 0;height:'+pct+'%;min-height:8px;transition:height 0.5s"></div>' +
             '<span style="font-size:9px;color:#888;margin-top:4px">'+day.date.substring(5)+'</span>' +
             '<span style="font-size:10px;font-weight:600;color:#333">'+day.count+'</span></div>';
         });
@@ -2293,7 +2478,7 @@ function renderWebhookTable(hooks) {
     var events = JSON.parse(h.events || '[]');
     var eventStr = '';
     for (var j = 0; j < events.length; j++) {
-      eventStr += events[j] === '*' ? '<span style="background:#1a73e8;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin:0 2px">全部</span>' : '<span style="background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:4px;font-size:10px;margin:0 2px">'+events[j]+'</span>';
+      eventStr += events[j] === '*' ? '<span style="background:' + PRIMARY_COLOR + ';color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin:0 2px">全部</span>' : '<span style="background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:4px;font-size:10px;margin:0 2px">'+events[j]+'</span>';
     }
     html += '<tr>' +
       '<td><b>' + h.name + '</b></td>' +
@@ -2303,7 +2488,7 @@ function renderWebhookTable(hooks) {
       '<td>' + statusBadge + '</td>' +
       '<td style="font-size:11px;color:#888">' + (h.created_at || '') + '</td>' +
       '<td style="white-space:nowrap">' +
-        '<button onclick="editWebhook(' + h.id + ')" style="background:#1a73e8;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">编辑</button>' +
+        '<button onclick="editWebhook(' + h.id + ')" style="background:' + PRIMARY_COLOR + ';color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">编辑</button>' +
         '<button onclick="testWebhook(' + h.id + ')" style="background:#ff8f00;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">测试</button>' +
         '<button onclick="deleteWebhook(' + h.id + ')" style="background:#ff5252;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">删除</button>' +
       '</td></tr>';
@@ -2745,7 +2930,7 @@ function loadIMMessages() {
         html += '<tr><td colspan="6" class="status-text">暂无消息记录</td></tr>';
       } else {
         var dirIcons = {inbound:'📥 接收', outbound:'📤 发送'};
-        var statusColors = {sent:'#1a73e8', delivered:'#43a047', failed:'#e53935'};
+        var statusColors = {sent:'' + PRIMARY_COLOR + '', delivered:'#43a047', failed:'#e53935'};
         for (var i = 0; i < msgs.length; i++) {
           var m = msgs[i];
           var statusDot = '<span style="color:' + (statusColors[m.status] || '#888') + ';font-size:10px">●</span>';
@@ -3016,7 +3201,7 @@ function renderExtLinkTable(links) {
   }
   for (var i = 0; i < links.length; i++) {
     var l = links[i];
-    var urlHtml = l.external_url ? '<a href="' + l.external_url + '" target="_blank" style="color:#1a73e8;font-size:12px">🔗 查看</a>' : '-';
+    var urlHtml = l.external_url ? '<a href="' + l.external_url + '" target="_blank" style="color:' + PRIMARY_COLOR + ';font-size:12px">🔗 查看</a>' : '-';
     var sysLabels = {jira:'📌 Jira', zentao:'🐉 禅道', github:'🐙 GitHub', gitlab:'🦊 GitLab'};
     var typeLabel = l.link_type === 'defect' ? '🐛 缺陷' : '📎 引用';
     var statusDot = l.sync_status === 'active' ? '<span style="color:#43a047;font-size:11px">● 活跃</span>' : '<span style="color:#888;font-size:11px">● ' + l.sync_status + '</span>';
@@ -3330,7 +3515,7 @@ if ('serviceWorker' in navigator) {
       <input type="date" id="auditFilterStart" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px">
       <span style="font-size:12px;color:#999">至</span>
       <input type="date" id="auditFilterEnd" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px">
-      <button onclick="loadAuditLogs()" style="padding:6px 14px;background:#1a73e8;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">查询</button>
+      <button onclick="loadAuditLogs()" style="padding:6px 14px;background:var(--primary-color);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">查询</button>
     </div>
     <div id="auditLogCount" style="font-size:12px;color:#888;margin-bottom:8px"></div>
     <div style="overflow-x:auto">
@@ -3412,7 +3597,7 @@ function loadAnalytics() {
       
       // Status bars
       var labels = {created:'待处理', processing:'处理中', resolved:'已解决', rated:'待关闭', closed:'已关闭'};
-      var colors = {created:'#ff9800', processing:'#1a73e8', resolved:'#43a047', rated:'#7b1fa2', closed:'#999'};
+      var colors = {created:'#ff9800', processing:'' + PRIMARY_COLOR + '', resolved:'#43a047', rated:'#7b1fa2', closed:'#999'};
       var maxVal = Math.max(statusData.created||1, statusData.processing||1, statusData.resolved||1, statusData.rated||1, statusData.closed||1);
       var barsHtml = '';
       var order = ['created','processing','resolved','rated','closed'];
@@ -3494,7 +3679,7 @@ function loadAuditLogs(page) {
         h += '<tr>' +
           '<td style="padding:6px 10px;border-bottom:1px solid #f5f5f5;white-space:nowrap;color:#666">' + (l.created_at || '').substring(0, 19) + '</td>' +
           '<td style="padding:6px 10px;border-bottom:1px solid #f5f5f5;white-space:nowrap">' + l.actor_name + ' <span style="color:#999;font-size:11px">(' + l.actor_id.substring(0,12) + ')</span></td>' +
-          '<td style="padding:6px 10px;border-bottom:1px solid #f5f5f5;white-space:nowrap"><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:#f0f4ff;color:#1a73e8">' + l.action + '</span></td>' +
+          '<td style="padding:6px 10px;border-bottom:1px solid #f5f5f5;white-space:nowrap"><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:#f0f4ff;color:' + PRIMARY_COLOR + '">' + l.action + '</span></td>' +
           '<td style="padding:6px 10px;border-bottom:1px solid #f5f5f5;color:#777;font-size:11px">' + detail + '</td></tr>';
       }
       tbody.innerHTML = h;

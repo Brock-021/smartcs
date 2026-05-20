@@ -1361,3 +1361,253 @@ Phase 1（状态机）是核心阻塞项，所有其他阶段依赖它。
 **关联需求文档：** `docs/SmartCS-需求文档.md` v5.6  
 **最后更新：** 2026-05-20  
 **设计人：** 旺财
+
+---
+
+## 十三、v4.1 配置系统设计
+
+### 13.1 system_config 表设计
+
+```sql
+CREATE TABLE system_config (
+    key TEXT PRIMARY KEY,          -- 配置键名
+    value TEXT NOT NULL,           -- 配置值（统一字符串存储）
+    updated_at TEXT DEFAULT (datetime('now','localtime'))  -- 最近更新时间
+);
+```
+
+所有配置以 key-value 形式存储，value 采用字符串类型，读取时根据上下文做类型转换（`int()` / `str()` 等）。
+
+#### 预置配置项分四组
+
+**1. 品牌配置（5个键）：**
+
+| key | 默认值 | 说明 |
+|-----|--------|------|
+| `brand_name` | `SmartCS 智能客服` | 品牌名称 |
+| `brand_short` | `SmartCS` | 品牌简称 |
+| `brand_primary_color` | `#1a73e8` | 主题色 |
+| `brand_logo_path` | `/static/icon-192.png` | Logo 路径 |
+| `brand_favicon_path` | `/static/favicon.ico` | Favicon 路径 |
+
+**2. 安全配置（6个键）：**
+
+| key | 默认值 | 说明 |
+|-----|--------|------|
+| `password_min_length` | `8` | 密码最小长度 |
+| `password_require_upper` | `true` | 要求大写字母 |
+| `password_expire_days` | `90` | 密码过期天数 |
+| `login_max_attempts` | `5` | 登录最大尝试次数 |
+| `login_lockout_minutes` | `15` | 锁定时间(分钟) |
+| `audit_log_retention_days` | `365` | 审计日志保留天数 |
+
+**3. 系统行为配置（5个键）：**
+
+| key | 默认值 | 说明 |
+|-----|--------|------|
+| `session_lifetime` | `28800` | 会话生命周期(秒) |
+| `session_idle_timeout` | `1800` | 空闲超时(秒) |
+| `auto_check_interval` | `300` | 自动检查间隔(秒) |
+| `pagination_per_page` | `50` | 分页大小 |
+| `max_upload_size_mb` | `50` | 上传限制(MB) |
+
+**4. 系统运行时配置（已有键）：**
+
+| key | 默认值 | 说明 |
+|-----|--------|------|
+| `api_key` | 空 | AI API Key |
+| `api_base_url` | `https://api.deepseek.com/v1` | AI API 地址 |
+| `model_name` | `deepseek-chat` | 模型名称 |
+| `admin_password` | `admin123` | 管理员密码 |
+| `auto_close_min` | `20` | 已创建超时(分钟) |
+| `auto_rate_hours` | `24` | 已处理超时(小时) |
+| `ticket_search_max_days` | `365` | 搜索范围(天) |
+| `level_names` | JSON | 级别名称映射 |
+
+### 13.2 配置缓存策略
+
+#### 设计目标
+
+- 读取高频：`get_system_config()` 可能在每次请求中被调用
+- 写入低频：仅管理员修改配置时才写入
+- 缓存一致性：修改后立即失效缓存
+
+#### 实现方案
+
+```python
+_config_cache = {}          # 内存缓存字典
+_config_cache_time = 0      # 最后缓存时间
+CACHE_TTL = 300             # 缓存有效期 5 分钟
+
+def get_system_config():
+    """读取全部配置，带缓存"""
+    global _config_cache, _config_cache_time
+    now = time.time()
+    if _config_cache and (now - _config_cache_time) < CACHE_TTL:
+        return _config_cache
+    rows = get_db().execute("SELECT key, value FROM system_config").fetchall()
+    _config_cache = {r['key']: r['value'] for r in rows}
+    _config_cache_time = now
+    return _config_cache
+
+def invalidate_config_cache():
+    """写入配置后调用，强制下次读取走数据库"""
+    global _config_cache, _config_cache_time
+    _config_cache = {}
+    _config_cache_time = 0
+```
+
+**缓存失效时机：**
+- `POST /api/admin/config` — 系统配置修改
+- `POST /api/admin/brand-config` — 品牌配置修改
+- `POST /api/admin/security-config` — 安全配置修改
+
+#### Flask 配置同步
+
+由于 Flask 的 `app.config` 在应用启动时初始化，v4.1 新增 `_sync_app_config_from_db()` 函数，在 `@app.before_request` 和 `@app.context_processor` 中调用：
+
+```python
+def _sync_app_config_from_db():
+    try:
+        cfg = get_system_config()
+        sl = int(cfg.get('session_lifetime', '28800'))
+        app.config['PERMANENT_SESSION_LIFETIME'] = sl
+        mu = int(cfg.get('max_upload_size_mb', '50'))
+        app.config['MAX_CONTENT_LENGTH'] = mu * 1024 * 1024
+    except:
+        pass
+```
+
+### 13.3 CSS 变量方案
+
+#### 原理
+
+通过 `<style>` 标签在页面头部注入 CSS 自定义属性，覆盖全局颜色：
+
+```html
+<style>
+:root {
+    --brand-primary-color: '{{ brand_primary_color }}';
+}
+</style>
+```
+
+所有模板中原先硬编码的颜色值替换为：
+
+```css
+/* 原：background: #1a73e8; */
+/* 现：*/
+background: var(--primary-color);
+
+/* 其中 */
+:root {
+    --primary-color: var(--brand-primary-color, #1a73e8);
+}
+```
+
+#### 实现要点
+
+- 使用 `context_processor` 将品牌配置注入所有模板：`app.context_processor(inject_brand_config)`
+- 模板中通过 `{{ brand_primary_color }}` 直接使用
+- `context_processor` 中同时调用 `_sync_app_config_from_db()` 保证配置同步
+- 所有 6 个模板均做了 CSS 变量替换
+
+#### 生效范围
+
+| 模板文件 | CSS 变量使用 |
+|---------|-------------|
+| chat.html | 主题色、按钮颜色、链接颜色 |
+| admin.html | 导航栏、标签页、按钮颜色 |
+| agent_dashboard.html | 侧边栏、按钮、状态标记颜色 |
+| agent_login.html | 登录按钮颜色 |
+| upload.html | 上传区域、按钮颜色 |
+| user_login.html | 登录/注册按钮颜色 |
+
+### 13.4 品牌配置 API 设计
+
+#### 接口定义
+
+| 方法 | 路径 | 描述 | 权限 |
+|------|------|------|------|
+| GET | `/api/admin/brand-config` | 获取品牌配置 | 系统管理员 |
+| POST | `/api/admin/brand-config` | 更新品牌配置 | 系统管理员 |
+
+#### GET 响应格式
+
+```json
+GET /api/admin/brand-config
+→ 200 OK
+{
+    "brand_name": "SmartCS 智能客服",
+    "brand_short": "SmartCS",
+    "brand_primary_color": "#1a73e8",
+    "brand_logo_path": "/static/icon-192.png",
+    "brand_favicon_path": "/static/favicon.ico"
+}
+```
+
+#### POST 请求格式
+
+```json
+POST /api/admin/brand-config
+{
+    "brand_name": "XX公司 IT 服务台",
+    "brand_primary_color": "#1890ff"
+}
+```
+
+**约束：** 仅更新 `BRAND_CONFIG_KEYS` 集合中的键：
+```python
+BRAND_CONFIG_KEYS = {'brand_name', 'brand_short', 'brand_primary_color', 'brand_logo_path', 'brand_favicon_path'}
+```
+
+#### POST 响应
+
+```json
+→ 200 OK
+{"ok": true}
+```
+
+**副作用：**
+- 调用 `invalidate_config_cache()` 清除缓存
+- 记录审计日志：`admin.brand_config.update`
+
+### 13.5 安全配置 API 设计
+
+| 方法 | 路径 | 描述 | 权限 |
+|------|------|------|------|
+| GET | `/api/admin/security-config` | 获取安全配置 | 安全管理员 |
+| POST | `/api/admin/security-config` | 更新安全配置 | 安全管理员 |
+
+**约束键集合：**
+```python
+SECURITY_CONFIG_KEYS = {'password_min_length', 'password_require_upper', 'password_expire_days', 'login_max_attempts', 'login_lockout_minutes', 'audit_log_retention_days'}
+```
+
+### 13.6 PWA 动态化设计
+
+#### manifest.json
+
+```python
+@app.route('/manifest.json')
+def manifest():
+    cfg = get_brand_config()
+    return jsonify({
+        "name": cfg.get('brand_name', 'SmartCS 智能客服'),
+        "short_name": cfg.get('brand_short', 'SmartCS'),
+        "background_color": cfg.get('brand_primary_color', '#1a73e8'),
+        "theme_color": cfg.get('brand_primary_color', '#1a73e8'),
+        ...
+    })
+```
+
+#### sw.js (Service Worker)
+
+```python
+@app.route('/sw.js')
+def service_worker():
+    cfg = get_brand_config()
+    brand_short = cfg.get('brand_short', 'SmartCS')
+    cache_name = f'{brand_short}-cache-v2'  # 使用品牌缩写命名缓存
+    ...
+```
