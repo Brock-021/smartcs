@@ -670,6 +670,8 @@ function send() {
   var text=inp.value.trim();
   if(!text) return;
   if(isResolved) return;
+  // If we resumed a conversation, use the resumed convId
+  if (window.convId && window.isEscalated) convId = window.convId;
   addMsg(text.replace(/</g,'&lt;'), 'user');
   inp.value=''; inp.style.height='auto';
   btn.disabled=true; showTyping();
@@ -1476,7 +1478,11 @@ function doRepairSearch() {
       var filtered = ts.filter(function(t) {
         return (t.ticket_number && t.ticket_number.toLowerCase().indexOf(ql) >= 0) ||
                (t.id && t.id.toLowerCase().indexOf(ql) >= 0) ||
-               (t.issue_description && t.issue_description.toLowerCase().indexOf(ql) >= 0);
+               (t.issue_description && t.issue_description.toLowerCase().indexOf(ql) >= 0) ||
+               (t.customer_feedback && t.customer_feedback.toLowerCase().indexOf(ql) >= 0) ||
+               (t.agent_display && t.agent_display.toLowerCase().indexOf(ql) >= 0) ||
+               (t.agent_name && t.agent_name.toLowerCase().indexOf(ql) >= 0) ||
+               (t.resolution_notes && t.resolution_notes.toLowerCase().indexOf(ql) >= 0);
       });
       if (filtered.length === 0) {
         results.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">未找到匹配的工单</div></div>';
@@ -1587,61 +1593,46 @@ function toggleTicketDetail2(el) {
 // ========== 点击未关闭工单 -> 继续对话 ==========
 function resumeTicketConversation(ticketId, convId) {
   if (!ticketId) return;
-  // Close modal
   var modal = document.getElementById('myTicketsModal');
   if (modal) modal.style.display = 'none';
   
-  // Check if we have a valid conversation_id
   if (convId) {
-    // Load this conversation into chat
-    // Set globals used by the chat system
-    window.resumeConvId = convId;
-    window.resumeTicketId = ticketId;
-    
-    // Load conversation history
     var xhr = new XMLHttpRequest();
     xhr.open('GET', '/api/chat/history?conversation_id=' + encodeURIComponent(convId), true);
     xhr.onload = function() {
       try {
         var msgs = JSON.parse(xhr.responseText);
         if (msgs && msgs.length > 0) {
-          // Clear chat box and load messages
           var box = document.getElementById('chatBox');
           box.innerHTML = '<div class="pull-to-refresh" id="pullToRefresh"><span class="ptr-spinner"></span><span class="ptr-text">下拉刷新...</span></div>';
-          var hadAgent = false;
           for (var i = 0; i < msgs.length; i++) {
             var m = msgs[i];
-            var role = m.role;
-            var content = m.content || '';
-            var time = m.created_at || '';
-            if (role === 'agent') hadAgent = true;
-            var cls = role === 'user' ? 'user' : (role === 'agent' ? 'agent' : (role === 'system' ? 'system' : 'bot'));
-            if (content) {
-              box.innerHTML += '<div class="msg ' + cls + '">' + content.replace(/\n/g, '<br>') +
-                (time ? '<span class="time">' + time.substring(0,16) + '</span>' : '') + '</div>';
+            var cls = m.role === 'user' ? 'user' : (m.role === 'agent' ? 'agent' : (m.role === 'system' ? 'system' : 'bot'));
+            if (m.content) {
+              box.innerHTML += '<div class="msg ' + cls + '">' + m.content.replace(/\n/g, '<br>') +
+                (m.created_at ? '<span class="time">' + m.created_at.substring(0,16) + '</span>' : '') + '</div>';
             }
           }
           box.scrollTop = box.scrollHeight;
           
-          // Set conversation state
+          // Directly set global convId so send() uses it
+          convId = convId;
+          
+          // Set globals correctly for the chat system
           window.convId = convId;
           window.isEscalated = true;
           window.isResolved = false;
-          window.currentTicketId = ticketId;
           
-          // Show the esc bar and enable chat
+          // Show esc bar
           var escBar = document.getElementById('escBar');
-          if (escBar) {
-            escBar.style.display = 'flex';
-            escBar.querySelector('span').innerHTML = '<strong>✅ 已恢复对话</strong>，请继续描述您的问题';
-          }
+          if (escBar) { escBar.style.display = 'flex'; }
           document.getElementById('humanBtn').disabled = true;
           document.getElementById('humanBtn').style.background = '#999';
           document.getElementById('humanBtn').textContent = '💬 对话中';
           document.getElementById('msgInput').disabled = false;
           document.getElementById('sendBtn').disabled = false;
           
-          // Switch to chat tab on mobile
+          // Switch to chat tab
           var navItems = document.querySelectorAll('.bottom-nav .nav-item');
           if (navItems.length > 0 && window.innerWidth <= 480) navItems[0].click();
         }
@@ -1649,27 +1640,8 @@ function resumeTicketConversation(ticketId, convId) {
     };
     xhr.onerror = function() { alert('加载对话失败'); };
     xhr.send();
-  } else {
-    alert('该工单无关联对话记录');
   }
 }
-
-// Override send() to use resumed conversation
-(function() {
-  var origSend = window.send;
-  if (origSend) {
-    var patched = function() {
-      if (window.resumeConvId && window.convId !== window.resumeConvId) {
-        // Set up the resumed conversation first
-        window.convId = window.resumeConvId;
-        window.isEscalated = true;
-        window.isResolved = false;
-      }
-      return origSend();
-    };
-    window.send = patched;
-  }
-})();
 
 // ========== 下拉刷新（移动端）==========
 (function(){
