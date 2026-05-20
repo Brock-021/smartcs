@@ -1195,6 +1195,15 @@ SYSTEM_PROMPT = """你是一个专业的智能客服助手。只根据知识库�
 @app.route('/')
 def index(): return render_template('chat.html')
 
+@app.route('/login')
+def customer_login_page():
+    return render_template('user_login.html')
+
+@app.route('/register')
+def customer_register_page():
+    return redirect('/login')
+
+
 @app.route('/manifest.json')
 def manifest():
     return jsonify({
@@ -1947,6 +1956,10 @@ def admin_update_customer_profile(cid):
         db.execute("INSERT INTO customer_profiles(id,customer_id,name,phone,company,notes,employee_id,department) VALUES(?,?,?,?,?,?,?,?)",
                    (gen_id('cp-'), cid, data.get('name',''), data.get('phone',''),
                     data.get('company',''), data.get('notes',''), data.get('employee_id',''), data.get('department','')))
+    if data.get('email') is not None:
+        db.execute("UPDATE customers SET email=? WHERE id=?", (data.get('email',''), cid))
+    if data.get('name'):
+        db.execute("UPDATE customers SET name=? WHERE id=?", (data.get('name',''), cid))
     db.commit()
     return jsonify({'ok': True})
 
@@ -1995,6 +2008,50 @@ def admin_customer_detail(cid):
         LEFT JOIN agent_profiles ap ON b.agent_id = ap.agent_id
         WHERE b.customer_id=?""", (cid,)).fetchall()
     return jsonify({'customer':dict(cust),'tickets':[dict(t) for t in tickets],'bindings':[dict(b) for b in bindings]})
+
+@app.route('/api/admin/customers/<cid>/reset-password', methods=['PUT'])
+@admin_required
+def admin_customer_reset_password(cid):
+    '''管理员重置用户密码'''
+    data = request.get_json()
+    password = data.get('password', '')
+    if not password or len(password) < 6:
+        return jsonify({'error': '密码不能少于6位'}), 400
+    db = get_db()
+    customer = db.execute("SELECT id FROM customers WHERE id=?", (cid,)).fetchone()
+    if not customer:
+        return jsonify({'error': '客户不存在'}), 404
+    pw_hash = generate_password_hash(password)
+    db.execute("UPDATE customers SET password_hash=? WHERE id=?", (pw_hash, cid))
+    db.commit()
+    log_audit('', 'admin.customer.reset_password', session.get('agent_id',''), session.get('agent_name',''),
+              {'customer_id': cid})
+    return jsonify({'ok': True, 'message': '密码已重置'})
+
+@app.route('/api/admin/customers/<cid>', methods=['DELETE'])
+@admin_required
+def admin_delete_customer(cid):
+    '''管理员删除用户，同时清理关联数据'''
+    db = get_db()
+    customer = db.execute("SELECT id FROM customers WHERE id=?", (cid,)).fetchone()
+    if not customer:
+        return jsonify({'error': '客户不存在'}), 404
+    # Clean up associated data
+    db.execute("DELETE FROM customer_profiles WHERE customer_id=?", (cid,))
+    db.execute("DELETE FROM customer_agent_bindings WHERE customer_id=?", (cid,))
+    db.execute("DELETE FROM im_user_mappings WHERE smartcs_customer_id=?", (cid,))
+    # Delete tickets and related messages
+    conv_ids = [row['conversation_id'] for row in db.execute("SELECT conversation_id FROM service_tickets WHERE customer_id=?", (cid,)).fetchall()]
+    for conv_id in conv_ids:
+        db.execute("DELETE FROM messages WHERE conversation_id=?", (conv_id,))
+        db.execute("DELETE FROM escalations WHERE conversation_id=?", (conv_id,))
+        db.execute("DELETE FROM conversations WHERE id=?", (conv_id,))
+    db.execute("DELETE FROM service_tickets WHERE customer_id=?", (cid,))
+    db.execute("DELETE FROM customers WHERE id=?", (cid,))
+    db.commit()
+    log_audit('', 'admin.customer.delete', session.get('agent_id',''), session.get('agent_name',''),
+              {'customer_id': cid})
+    return jsonify({'ok': True, 'message': '客户已删除'})
 
 # 客服管理
 
@@ -2918,6 +2975,157 @@ def agent_query_defect(ticket_id):
 
 
 # ====== 外部链接管理（管理员） ======
+
+
+# ====== SSL 证书管理 ======
+@app.route('/api/admin/ssl/cert', methods=['GET'])
+@admin_required
+def admin_ssl_info():
+    import os, subprocess
+    cert_path = '/etc/ssl/certs/smartcs.crt'
+    key_path = '/etc/ssl/private/smartcs.key'
+    info = {'cert_path': cert_path, 'key_path': key_path}
+    if os.path.exists(cert_path):
+        try:
+            result = subprocess.run(['openssl', 'x509', '-in', cert_path, '-noout', '-dates', '-subject', '-issuer'], capture_output=True, text=True, timeout=5)
+            for line in result.stdout.strip().split(chr(10)):
+                if line.startswith('notBefore='): info['not_before'] = line[10:]
+                elif line.startswith('notAfter='): info['not_after'] = line[9:]
+                elif line.startswith('subject='): info['subject'] = line[8:]
+                elif line.startswith('issuer='): info['issuer'] = line[7:]
+        except: pass
+        info['cert_exists'] = True
+        info['cert_size'] = os.path.getsize(cert_path)
+    else:
+        info['cert_exists'] = False
+    info['key_exists'] = os.path.exists(key_path)
+    return jsonify(info)
+
+@app.route('/api/admin/ssl/cert', methods=['POST'])
+@admin_required
+def admin_ssl_upload():
+    import os, tempfile, subprocess
+    data = request.get_json() or {}
+    cert_content = data.get('certificate', '')
+    key_content = data.get('private_key', '')
+    if not cert_content or not key_content:
+        return jsonify({'error': '证书和私钥都不能为空'}), 400
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.crt', delete=False) as f:
+            f.write(cert_content); cert_tmp = f.name
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.key', delete=False) as f:
+            f.write(key_content); key_tmp = f.name
+        result = subprocess.run(['openssl', 'x509', '-in', cert_tmp, '-noout'], capture_output=True, text=True)
+        if result.returncode != 0:
+            os.unlink(cert_tmp); os.unlink(key_tmp)
+            return jsonify({'error': '证书格式无效'}), 400
+        os.chmod(cert_tmp, 0o644); os.chmod(key_tmp, 0o600)
+        os.rename(cert_tmp, '/etc/ssl/certs/smartcs.crt')
+        os.rename(key_tmp, '/etc/ssl/private/smartcs.key')
+        subprocess.run(['systemctl', 'reload', 'nginx'], timeout=10)
+        log_audit('', 'admin.ssl_update', session.get('agent_id',''), session.get('agent_name',''), {})
+        return jsonify({'ok': True, 'message': 'SSL 证书已更新'})
+    except Exception as e:
+        return jsonify({'error': str(e)[:100]}), 500
+
+# ====== 知识库 CRUD ======
+@app.route('/api/admin/knowledge', methods=['GET'])
+@admin_required
+def admin_knowledge_list():
+    q = request.args.get('q', '').strip().lower()
+    db = get_db()
+    rows = db.execute('SELECT id, filename, word_count, uploaded_by, created_at FROM knowledge_files ORDER BY created_at DESC').fetchall()
+    results = []
+    for r in rows:
+        fp = os.path.join(KNOWLEDGE_DIR, r['filename'])
+        snippet = ''
+        if os.path.exists(fp):
+            with open(fp, 'r', encoding='utf-8', errors='replace') as f:
+                snippet = f.read()[:200]
+        item = dict(r)
+        item['snippet'] = snippet
+        if not q or q in r['filename'].lower() or q in snippet.lower():
+            results.append(item)
+    return jsonify(results)
+
+@app.route('/api/admin/knowledge', methods=['POST'])
+@admin_required
+def admin_knowledge_create():
+    import uuid
+    data = request.get_json() or {}
+    file_name = (data.get('filename') or data.get('file') or '').strip()
+    content = (data.get('content') or data.get('snippet') or '').strip()
+    if not file_name:
+        return jsonify({'error': '文件名不能为空'}), 400
+    if not file_name.endswith('.md'):
+        file_name += '.md'
+    if not content:
+        return jsonify({'error': '内容不能为空'}), 400
+    fp = os.path.join(KNOWLEDGE_DIR, file_name)
+    db = get_db()
+    existing = db.execute('SELECT id FROM knowledge_files WHERE filename=?', (file_name,)).fetchone()
+    if existing:
+        return jsonify({'error': '该文件名已存在'}), 409
+    with open(fp, 'w', encoding='utf-8') as f:
+        f.write(content)
+    word_count = len(content)
+    db.execute('INSERT INTO knowledge_files(id, filename, word_count, uploaded_by) VALUES(?,?,?,?)',
+               ('kf-' + uuid.uuid4().hex[:12], file_name, word_count, session.get('agent_name','admin')))
+    db.commit()
+    log_audit('', 'admin.kb_create', session.get('agent_id',''), session.get('agent_name',''), {'file': file_name})
+    return jsonify({'ok': True})
+
+@app.route('/api/admin/knowledge/update', methods=['POST'])
+@admin_required
+def admin_knowledge_update():
+    data = request.get_json() or {}
+    kb_id = data.get('id', '')
+    file_name = (data.get('filename') or data.get('file') or '').strip()
+    content = data.get('content') or data.get('snippet') or ''
+    if not kb_id:
+        return jsonify({'error': '缺少条目ID'}), 400
+    db = get_db()
+    row = db.execute('SELECT filename FROM knowledge_files WHERE id=?', (kb_id,)).fetchone()
+    if not row:
+        return jsonify({'error': '条目不存在'}), 404
+    old_fn = row['filename']
+    target_fn = file_name if file_name else old_fn
+    if not target_fn.endswith('.md'):
+        target_fn += '.md'
+    old_fp = os.path.join(KNOWLEDGE_DIR, old_fn)
+    new_fp = os.path.join(KNOWLEDGE_DIR, target_fn)
+    if content:
+        with open(new_fp, 'w', encoding='utf-8') as f:
+            f.write(content)
+    if target_fn != old_fn and os.path.exists(old_fp) and old_fp != new_fp:
+        import shutil
+        shutil.move(old_fp, new_fp)
+    word_count = len(content) if content else len(open(old_fp).read()) if os.path.exists(old_fp) else 0
+    db.execute('UPDATE knowledge_files SET filename=?, word_count=?, updated_at=datetime("now","localtime") WHERE id=?',
+               (target_fn, word_count, kb_id))
+    db.commit()
+    log_audit('', 'admin.kb_update', session.get('agent_id',''), session.get('agent_name',''), {'kb_id': kb_id})
+    return jsonify({'ok': True})
+
+@app.route('/api/admin/knowledge', methods=['DELETE'])
+@admin_required
+def admin_knowledge_delete():
+    import json
+    data = request.get_json() or {}
+    kb_id = data.get('id', '')
+    if not kb_id:
+        return jsonify({'error': '缺少条目ID'}), 400
+    db = get_db()
+    row = db.execute('SELECT filename FROM knowledge_files WHERE id=?', (kb_id,)).fetchone()
+    if not row:
+        return jsonify({'error': '条目不存在'}), 404
+    fp = os.path.join(KNOWLEDGE_DIR, row['filename'])
+    if os.path.exists(fp):
+        os.remove(fp)
+    db.execute('DELETE FROM knowledge_files WHERE id=?', (kb_id,))
+    db.commit()
+    log_audit('', 'admin.kb_delete', session.get('agent_id',''), session.get('agent_name',''), {'file': row['filename']})
+    return jsonify({'ok': True})
 
 @app.route('/api/admin/external-links', methods=['POST'])
 @admin_required

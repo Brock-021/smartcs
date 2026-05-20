@@ -1149,6 +1149,12 @@ function togglePushNotify() {
   });
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+  // 确保输入框和发送按钮可用
+  var sBtn = document.getElementById('sendBtn');
+  if (sBtn) sBtn.disabled = false;
+  var mInput = document.getElementById('msgInput');
+  if (mInput) mInput.disabled = false;
 // ========== 底部 Tab 导航 ==========
 (function(){
   var isMobile = window.innerWidth <= 480;
@@ -1678,6 +1684,7 @@ function resumeTicketConversation(ticketId, convId) {
     ptr.classList.remove('show');
   }, {passive: true});
 })();
+});
 </script>
 
 <!-- 下拉刷新指示器 -->

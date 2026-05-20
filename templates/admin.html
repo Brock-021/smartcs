@@ -467,6 +467,7 @@ table tr.cursor-pointer{cursor:pointer}
   <div class="modal" style="width:420px">
     <h2>📝 编辑客户信息</h2>
     <input id="editUserName" placeholder="姓名">
+    <input id="editUserEmail" type="email" placeholder="邮箱">
     <input id="editUserEmpId" placeholder="工号">
     <input id="editUserPhone" placeholder="电话">
     <input id="editUserCompany" placeholder="公司">
@@ -677,6 +678,115 @@ function logout() {
   xhr.open('POST', '/agent/logout', true);
   xhr.onload = function(){ window.location.href = '/agent/login'; };
   xhr.send();
+}
+
+// ====== 知识库 CRUD ======
+function loadKnowledgeBase() {
+  var el = document.getElementById('kbList');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:#999">\u23f3 加载中...</div>';
+  var q = document.getElementById('kbSearch') ? document.getElementById('kbSearch').value.trim() : '';
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/knowledge' + (q ? '?q='+encodeURIComponent(q) : ''), true);
+  xhr.onload = function() {
+    try {
+      var items = JSON.parse(xhr.responseText);
+      if (!items || items.length === 0) {
+        el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#999"><div style="font-size:40px;margin-bottom:8px">\uD83D\uDCDA</div><div>暂无知识条目</div></div>';
+        return;
+      }
+      var h = '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f5f5f5"><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">文件名</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">分类</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">内容预览</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">创建时间</th><th style="padding:8px 6px;text-align:center;border-bottom:1px solid #ddd">操作</th></tr></thead><tbody>';
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        var jn = it.file || ''; var sn = (it.snippet||'').substring(0,60); var ct = it.category||'通用';
+        h += '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 6px">' + escapeHtml(jn) +
+          '</td><td style="padding:8px 6px"><span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:8px;font-size:11px">' + escapeHtml(ct) +
+          '</span></td><td style="padding:8px 6px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#666">' + escapeHtml(sn) +
+          '</td><td style="padding:8px 6px;color:#999;font-size:11px">' + (it.created_at||'').substring(0,10) +
+          '</td><td style="padding:8px 6px;text-align:center">' +
+          '<button class="btn btn-sm" onclick="editKb(\'' + it.id + '\')" style="padding:3px 8px;font-size:11px;margin-right:4px">\u270F\uFE0F</button>' +
+          '<button class="btn btn-sm" onclick="deleteKb(\'' + it.id + '\',\'' + (it.file||'').replace(/'/g,"\\'") + '\')" style="padding:3px 8px;font-size:11px;background:#ffebee;color:#c62828">\uD83D\uDDD1\uFE0F</button>' +
+          '</td></tr>';
+      }
+      h += '</tbody></table>';
+      el.innerHTML = h;
+    } catch(e) { el.innerHTML = '<div style="color:#d32f2f;padding:20px">加载失败</div>'; }
+  };
+  xhr.send();
+}
+function searchKb() { loadKnowledgeBase(); }
+
+function showKbForm() {
+  var ov = document.createElement('div'); ov.className = 'login-overlay show'; ov.id = 'kbFormOverlay'; ov.style.zIndex = '999';
+  ov.innerHTML = '<div style="background:#fff;max-width:600px;margin:5% auto;padding:24px;border-radius:12px"><h3 style="margin:0 0 16px">\uD83D\uDCDA 新增知识条目</h3>' +
+    '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">文件名 *</label><input id="kbFormFile" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px" placeholder="例如：打印机故障排查"></div>' +
+    '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">分类</label><input id="kbFormCategory" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px" placeholder="例如：打印机、网络、电脑" value="通用"></div>' +
+    '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">知识内容 *</label><textarea id="kbFormSnippet" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;min-height:120px;resize:vertical" placeholder="输入详细的解答内容..."></textarea></div>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="document.getElementById(\'kbFormOverlay\').remove()" style="padding:8px 20px">取消</button><button class="btn btn-primary" onclick="submitKbForm()" style="padding:8px 20px">保存</button></div></div>';
+  ov.addEventListener('click',function(e){if(e.target===this)this.remove()});
+  document.body.appendChild(ov);
+}
+function submitKbForm() {
+  var f=document.getElementById('kbFormFile').value.trim(), s=document.getElementById('kbFormSnippet').value.trim(), c=document.getElementById('kbFormCategory').value.trim()||'通用';
+  if(!f||!s){alert('文件名和内容不能为空');return;}
+  var x=new XMLHttpRequest();x.open('POST','/api/admin/knowledge',true);x.setRequestHeader('Content-Type','application/json');
+  x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.ok){document.getElementById('kbFormOverlay').remove();loadKnowledgeBase();}else alert(d.error||'失败');}catch(e){alert('失败');}};
+  x.send(JSON.stringify({file:f,snippet:s,category:c}));
+}
+function editKb(id) {
+  // Fetch current data
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/knowledge', true);
+  xhr.onload = function() {
+    try {
+      var items = JSON.parse(xhr.responseText);
+      var it = null;
+      for (var i = 0; i < items.length; i++) { if (items[i].id === id) { it = items[i]; break; } }
+      if (!it) { alert('未找到该条目'); return; }
+      var ov=document.createElement('div');ov.className='login-overlay show';ov.id='kbFormOverlay';ov.style.zIndex='999';
+      ov.innerHTML='<div style="background:#fff;max-width:600px;margin:5% auto;padding:24px;border-radius:12px"><h3 style="margin:0 0 16px">\u270F\uFE0F 编辑</h3>'+
+        '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">文件名</label><input id="kbFormFile" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px" value="'+escapeHtml(it.file||'')+'"></div>'+
+        '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">分类</label><input id="kbFormCategory" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px" value="'+escapeHtml(it.category||'')+'"></div>'+
+        '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">内容</label><textarea id="kbFormSnippet" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;min-height:120px;resize:vertical">'+escapeHtml(it.snippet||'')+'</textarea></div>'+
+        '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="document.getElementById(\'kbFormOverlay\').remove()">取消</button><button class="btn btn-primary" onclick="submitEditKb(\''+id+'\')">更新</button></div></div>';
+      ov.addEventListener('click',function(e){if(e.target===this)this.remove()});
+      document.body.appendChild(ov);
+    } catch(e) { alert('加载失败'); }
+  };
+  xhr.send();
+}
+function submitEditKb(id){var f=document.getElementById('kbFormFile').value.trim(),s=document.getElementById('kbFormSnippet').value.trim(),c=document.getElementById('kbFormCategory').value.trim()||'通用';if(!f||!s){alert('不能为空');return;}var x=new XMLHttpRequest();x.open('PUT','/api/admin/knowledge/'+id,true);x.setRequestHeader('Content-Type','application/json');x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.ok){document.getElementById('kbFormOverlay').remove();loadKnowledgeBase();}else alert(d.error||'失败');}catch(e){alert('失败');}};x.send(JSON.stringify({file:f,snippet:s,category:c}));}
+function deleteKb(id,nm){if(!confirm('确定删除 "'+nm+'" 吗？'))return;var x=new XMLHttpRequest();x.open('DELETE','/api/admin/knowledge/'+id,true);x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.ok)loadKnowledgeBase();else alert(d.error||'失败');}catch(e){alert('失败');}};x.send();}
+
+// ====== SSL 证书管理 ======
+function loadSslInfo() {
+  var el=document.getElementById('sslInfo');if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:20px;color:#999">\u23f3 加载中...</div>';
+  var x=new XMLHttpRequest();x.open('GET','/api/admin/ssl/cert',true);
+  x.onload=function(){try{var d=JSON.parse(x.responseText);
+    if(d.cert_exists){el.innerHTML='<table style="width:100%;font-size:13px">'+
+      '<tr><td style="padding:6px 10px;color:#888">证书路径</td><td style="padding:6px 10px"><code>'+escapeHtml(d.cert_path)+'</code></td></tr>'+
+      '<tr><td style="padding:6px 10px;color:#888">私钥路径</td><td style="padding:6px 10px"><code>'+escapeHtml(d.key_path)+'</code></td></tr>'+
+      (d.subject?'<tr><td style="padding:6px 10px;color:#888">主题</td><td style="padding:6px 10px">'+escapeHtml(d.subject)+'</td></tr>':'')+
+      (d.issuer?'<tr><td style="padding:6px 10px;color:#888">颁发者</td><td style="padding:6px 10px">'+escapeHtml(d.issuer)+'</td></tr>':'')+
+      (d.not_before?'<tr><td style="padding:6px 10px;color:#888">生效时间</td><td style="padding:6px 10px">'+escapeHtml(d.not_before)+'</td></tr>':'')+
+      (d.not_after?'<tr><td style="padding:6px 10px;color:#888">过期时间</td><td style="padding:6px 10px">'+escapeHtml(d.not_after)+'</td></tr>':'')+
+      '<tr><td style="padding:6px 10px;color:#888">大小</td><td>'+d.cert_size+' bytes</td></tr>'+
+      '<tr><td style="padding:6px 10px;color:#888">状态</td><td><span style="color:#2e7d32;font-weight:500">\u2705 已安装</span></td></tr></table>';
+    }else{el.innerHTML='<div style="text-align:center;padding:20px;color:#999"><div style="font-size:40px;padding:8px">\uD83D\uDD12</div><div>未检测到 SSL 证书</div></div>';}
+  }catch(e){el.innerHTML='<div style="color:#d32f2f;padding:20px">加载失败</div>';}};
+  x.send();
+}
+function uploadSslCert(){
+  var c=document.getElementById('sslCertInput').value.trim(),k=document.getElementById('sslKeyInput').value.trim();
+  if(!c||!k){alert('请填写证书和私钥');return;}
+  var st=document.getElementById('sslStatus');st.innerHTML='<span style="color:#1565c0">\u23f3 验证更新中...</span>';
+  var x=new XMLHttpRequest();x.open('POST','/api/admin/ssl/cert',true);x.setRequestHeader('Content-Type','application/json');
+  x.onload=function(){try{var d=JSON.parse(x.responseText);
+    if(d.ok){st.innerHTML='<span style="color:#2e7d32">\u2705 '+escapeHtml(d.message||'已更新')+'</span>';loadSslInfo();document.getElementById('sslCertInput').value='';document.getElementById('sslKeyInput').value='';}
+    else st.innerHTML='<span style="color:#c62828">\u274C '+escapeHtml(d.error||'失败')+'</span>';
+  }catch(e){st.innerHTML='<span style="color:#c62828">\u274C 失败</span>';}};
+  x.send(JSON.stringify({certificate:c,private_key:k}));
 }
 
 // ===== 系统升级记录 =====
@@ -1106,18 +1216,25 @@ function loadUsers() {
         document.getElementById('userPagination').innerHTML = '';
         return;
       }
-      var html = '<tr><th>ID</th><th>姓名</th><th>工号</th><th>电话</th><th>公司</th><th>部门</th><th>工单数</th><th>注册时间</th></tr>';
+      var html = '<tr><th>ID</th><th>姓名</th><th>邮箱</th><th>工号</th><th>电话</th><th>公司</th><th>部门</th><th>工单数</th><th>注册时间</th><th>操作</th></tr>';
       for (var i = 0; i < d.customers.length; i++) {
         var u = d.customers[i];
-        html += '<tr class="cursor-pointer" onclick="showUserDetail(\''+u.id+'\')">' +
+        html += '<tr>' +
           '<td style="font-family:monospace;font-size:11px">'+u.id.substring(0,10)+'</td>' +
           '<td>'+(u.pname||u.name||'游客')+'</td>' +
+          '<td style="font-size:12px;color:#555">'+(u.email||'-')+'</td>' +
           '<td>'+(u.employee_id||'-')+'</td>' +
           '<td>'+(u.phone||'-')+'</td>' +
           '<td>'+(u.company||'-')+'</td>' +
           '<td>'+(u.department||'-')+'</td>' +
           '<td>'+u.ticket_count+'</td>' +
-          '<td style="font-size:11px;color:#999">'+u.created_at+'</td></tr>';
+          '<td style="font-size:11px;color:#999">'+u.created_at+'</td>' +
+          '<td style="white-space:nowrap">' +
+            '<button onclick="event.stopPropagation();showUserDetail(\''+u.id+'\')" style="background:#1a73e8;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin:1px">详情</button>' +
+            '<button onclick="event.stopPropagation();showEditUserWithEmail(\''+u.id+'\',\''+(u.email||\'\')+'\',\''+encodeURIComponent(u.pname||u.name||\'\')+'\',\''+encodeURIComponent(u.employee_id||\'\')+'\',\''+encodeURIComponent(u.phone||\'\')+'\',\''+encodeURIComponent(u.company||\'\')+'\',\''+encodeURIComponent(u.department||\'\')+'\',\''+encodeURIComponent(u.notes||\'\')+'\')" style="background:#ff8f00;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin:1px">编辑</button>' +
+            '<button onclick="event.stopPropagation();resetUserPassword(\''+u.id+'\')" style="background:#7b1fa2;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin:1px">重置密码</button>' +
+            '<button onclick="event.stopPropagation();deleteUser(\''+u.id+'\',\''+encodeURIComponent(u.pname||u.name||u.id.substring(0,8))+'\')" style="background:#e53935;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;margin:1px">删除</button>' +
+          '</td></tr>';
       }
       document.getElementById('userTable').innerHTML = html;
       var pp = '';
@@ -1153,19 +1270,20 @@ function showUserDetail(cid) {
           (t.agent_display||'-')+' '+(t.customer_rating?'★'.repeat(t.customer_rating):'')+
           ' <span style="color:#999;float:right">'+t.created_at.substring(5,16)+'</span></div>';
       }
-      document.getElementById('userModalContent').innerHTML =
+            document.getElementById('userModalContent').innerHTML =
         '<h2>👤 客户详情</h2>' +
         '<div class="detail-section"><h3>基本信息</h3><div class="ticket-row-info">' +
         '<b>客户ID：</b>'+c.id+'<br><b>姓名：</b>'+(c.pname||c.name||'游客')+
+        '<br><b>邮箱：</b>'+(c.email||'-')+
         '<br><b>工号：</b>'+(c.employee_id||'-')+
         '<br><b>电话：</b>'+(c.phone||'-')+'<br><b>公司：</b>'+(c.company||'-')+
         '<br><b>部门：</b>'+(c.department||'-')+
         '<br><b>备注：</b>'+(c.notes||'-')+'<br><b>注册时间：</b>'+c.created_at+'</div></div>' +
         '<div class="detail-section"><h3>历史工单 ('+tickets.length+')</h3>'+ticketHtml+'</div>' +
         '<div class="btn-bar">' +
-        '<button class="btn-cancel" onclick="showEditUser(\''+cid+'\',\''+encodeURIComponent(c.pname||c.name||"")+'\',\''+encodeURIComponent(c.employee_id||"")+'\',\''+encodeURIComponent(c.phone||"")+'\',\''+encodeURIComponent(c.company||"")+'\',\''+encodeURIComponent(c.department||"")+'\',\''+encodeURIComponent(c.notes||"")+'\')">📝 编辑</button>' +
+        '<button class="btn-cancel" onclick="showEditUserWithEmail(\''+cid+'\',\''+(c.email||'')+'\',\''+encodeURIComponent(c.pname||c.name||'')+'\',\''+encodeURIComponent(c.employee_id||'')+'\',\''+encodeURIComponent(c.phone||'')+'\',\''+encodeURIComponent(c.company||'')+'\',\''+encodeURIComponent(c.department||'')+'\',\''+encodeURIComponent(c.notes||'')+'\')">📝 编辑</button>' +
+        '<button class="btn-danger" onclick="resetUserPassword(\''+cid+'\')" style="background:#7b1fa2;color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;margin-right:4px">🔑 重置密码</button>' +
         '<button class="btn-cancel" onclick="document.getElementById(\'userModal\').classList.remove(\'show\')">关闭</button></div>';
-      document.getElementById('userModal').classList.add('show');
     } catch(e) { console.error(e); }
   };
   xhr.send();
@@ -1219,6 +1337,19 @@ var currentEditUserId = '';
 function showEditUser(cid, name, empId, phone, company, dept, notes) {
   currentEditUserId = cid;
   document.getElementById('editUserName').value = decodeURIComponent(name);
+  document.getElementById('editUserEmail').value = '';
+  document.getElementById('editUserEmpId').value = decodeURIComponent(empId);
+  document.getElementById('editUserPhone').value = decodeURIComponent(phone);
+  document.getElementById('editUserCompany').value = decodeURIComponent(company);
+  document.getElementById('editUserDept').value = decodeURIComponent(dept);
+  document.getElementById('editUserNotes').value = decodeURIComponent(notes);
+  document.getElementById('editUserModal').classList.add('show');
+}
+
+function showEditUserWithEmail(cid, email, name, empId, phone, company, dept, notes) {
+  currentEditUserId = cid;
+  document.getElementById('editUserName').value = decodeURIComponent(name);
+  document.getElementById('editUserEmail').value = email;
   document.getElementById('editUserEmpId').value = decodeURIComponent(empId);
   document.getElementById('editUserPhone').value = decodeURIComponent(phone);
   document.getElementById('editUserCompany').value = decodeURIComponent(company);
@@ -1239,6 +1370,7 @@ function saveEditUser() {
   };
   xhr.send(JSON.stringify({
     name: document.getElementById('editUserName').value.trim(),
+    email: document.getElementById('editUserEmail').value.trim(),
     employee_id: document.getElementById('editUserEmpId').value.trim(),
     phone: document.getElementById('editUserPhone').value.trim(),
     company: document.getElementById('editUserCompany').value.trim(),
@@ -1247,6 +1379,58 @@ function saveEditUser() {
   }));
 }
 
+// ========== 客户管理增强 ==========
+function resetUserPassword(cid) {
+  var pwd = prompt('请输入新密码（至少6位）：');
+  if (!pwd || pwd.length < 6) {
+    if (pwd) alert('密码不能少于6位');
+    return;
+  }
+  if (!confirm('确定重置该客户的密码？')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', '/api/admin/customers/' + cid + '/reset-password', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        alert('✅ 密码已重置成功');
+        closeModal('userModal');
+      } else {
+        alert('重置失败：' + (d.error || '未知错误'));
+      }
+    } catch(e) { alert('重置失败'); }
+  };
+  xhr.onerror = function() { alert('网络错误'); };
+  xhr.send(JSON.stringify({password: pwd}));
+}
+
+function deleteUser(cid, name) {
+  name = decodeURIComponent(name) || cid.substring(0, 8);
+  if (!confirm('⚠️ 确定要删除客户 "' + name + '" 吗？')) return;
+  if (!confirm('⚠️ 再次确认：此操作将同时删除该客户的所有工单、对话记录和绑定关系！')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/customers/' + cid, true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        alert('✅ 客户已删除');
+        closeModal('userModal');
+        loadUsers();
+      } else {
+        alert('删除失败：' + (d.error || '未知错误'));
+      }
+    } catch(e) { alert('删除失败'); }
+  };
+  xhr.onerror = function() { alert('网络错误'); };
+  xhr.send();
+}
+
+function closeModal(modalId) {
+  var el = document.getElementById(modalId);
+  if (el) el.classList.remove('show');
+}
 // ===== 客服管理 =====
 function loadAgents() {
   var xhr = new XMLHttpRequest();
