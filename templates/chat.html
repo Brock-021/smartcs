@@ -164,6 +164,72 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 @media(max-width:480px){
   .msg img{max-width:200px}
 }
+
+/* 用户认证栏 */
+.user-auth-bar{display:none;align-items:center;gap:8px;padding:6px 14px;background:#e8f0fe;border-bottom:1px solid #c5d9f2;font-size:13px}
+.user-auth-bar .avatar{width:28px;height:28px;background:#1a73e8;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+.user-auth-bar .name{flex:1;color:#333;font-weight:500}
+.user-auth-bar .badge{font-size:10px;background:#43a047;color:#fff;padding:1px 8px;border-radius:8px}
+.user-auth-bar .login-btn{font-size:12px;color:#1a73e8;cursor:pointer;padding:4px 10px;border:1px solid #1a73e8;border-radius:6px;transition:all .2s;white-space:nowrap}
+.user-auth-bar .login-btn:hover{background:#e3f2fd}
+.user-auth-bar .logout-btn{font-size:12px;color:#d32f2f;cursor:pointer;padding:4px 10px;border:1px solid #d32f2f;border-radius:6px;transition:all .2s;white-space:nowrap}
+.user-auth-bar .logout-btn:hover{background:#ffebee}
+/* 我的工单 */
+.my-tickets{display:none;background:#fff;border-bottom:1px solid #e0e0e0;padding:8px 14px}
+.my-tickets h4{font-size:13px;color:#333;margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.my-tickets .tk-item{padding:6px 0;border-bottom:1px solid #f5f5f5;cursor:pointer}
+.my-tickets .tk-item:last-child{border-bottom:none}
+.my-tickets .tk-top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.my-tickets .tk-issue{font-size:12px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.my-tickets .tk-time{font-size:10px;color:#999;margin-top:1px}
+.my-tickets .tk-detail{display:none;margin-top:4px;padding:6px 8px;background:#f9f9f9;border-radius:6px;font-size:11px;line-height:1.6}
+.my-tickets .tk-detail.expanded{display:block}
+.my-tickets .tk-detail .row{display:flex;gap:6px}
+.my-tickets .tk-detail .label{color:#888;min-width:40px}
+.my-tickets .tk-detail .value{color:#333}
+/* 登录弹窗 */
+.login-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center}
+.login-overlay.show{display:flex}
+.login-modal{background:#fff;border-radius:16px;padding:28px;width:360px;max-width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);animation:fadeIn .3s}
+.login-modal h2{font-size:18px;color:#333;margin-bottom:4px;text-align:center}
+.login-modal .sub{font-size:13px;color:#666;text-align:center;margin-bottom:16px}
+.login-modal input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:14px;margin-bottom:10px;outline:none;transition:border .2s}
+.login-modal input:focus{border-color:#1a73e8}
+.login-modal .login-error{font-size:12px;color:#d32f2f;text-align:center;margin-bottom:8px;display:none}
+.login-btn-primary{width:100%;padding:11px;background:#1a73e8;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer;transition:all .2s}
+.login-btn-primary:hover{background:#1557b0}
+.login-btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.toggle-link{text-align:center;font-size:12px;color:#888;margin-top:10px}
+.toggle-link a{color:#1a73e8;cursor:pointer;text-decoration:none}
+.toggle-link a:hover{text-decoration:underline}
+/* 页面内容 (设置/工单) */
+.page-content{display:none !important;padding:0 !important;margin:0 !important;height:auto !important;overflow-y:auto}
+.page-content.page-active{display:block !important}
+/* 设置页用户区块 */
+#customer-auth-section{background:#fff;border-radius:10px;padding:16px;margin:8px 0;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+/* 已登录状态下隐藏"问题已解决"按钮 */
+body.logged-in .esc-bar .btn-resolved{display:none !important}
+/* 个人中心弹窗 */
+.profile-page-modal{max-width:420px;max-height:80vh;overflow-y:auto;padding:20px}
+.profile-page-modal .profile-header{text-align:center;padding:16px 0;background:linear-gradient(135deg,#1a73e8,#0d47a1);color:#fff;border-radius:10px;margin-bottom:12px}
+.profile-page-modal .profile-header .big-avatar{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 6px}
+.profile-page-modal .profile-header h2{font-size:16px;margin:0}
+.profile-page-modal .profile-header .email{font-size:11px;color:rgba(255,255,255,0.7);margin-top:2px}
+.profile-page-modal .info-card{background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);text-align:left}
+.profile-page-modal .info-card h3{font-size:13px;color:#333;margin-bottom:6px;border-bottom:1px solid #f0f0f0;padding-bottom:4px}
+.profile-page-modal .info-row{display:flex;padding:4px 0;font-size:12px}
+.profile-page-modal .info-row .label{color:#888;min-width:50px}
+.profile-page-modal .info-row .value{color:#333}
+/* 搜索弹窗 */
+.repair-search-input{flex:1;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none}
+.repair-search-input:focus{border-color:#1a73e8}
+.repair-search-btn{padding:9px 16px;background:#1a73e8;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px}
+.repair-search-btn:hover{background:#1557b0}
+/* 空状态 */
+.empty-state{text-align:center;padding:40px 20px;color:#999}
+.empty-state .empty-icon{font-size:48px;margin-bottom:12px}
+.empty-state .empty-text{font-size:14px}
+
 </style>
 </head>
 <body>
@@ -875,11 +941,38 @@ if ('serviceWorker' in navigator) {
 
 // ========== 客户认证 ==========
 function loadCustomerAuth() {
-  var el = document.getElementById('customer-auth-section');
-  if (!el) return;
+  var section = document.getElementById('customer-auth-section');
+  if (!section) return;
   var xhr = new XMLHttpRequest();
   xhr.open('GET', '/api/customer/me', true);
   xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.logged_in && d.customer) {
+        var initial = d.customer.name ? d.customer.name.charAt(0) : '?';
+        section.innerHTML = '<div class="profile-info" style="margin-bottom:4px">' +
+          '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0">' +
+          '<div style="width:36px;height:36px;background:#1a73e8;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;cursor:pointer" onclick="showProfilePage()">' + initial + '</div>' +
+          '<div style="flex:1;text-align:left;cursor:pointer" onclick="showProfilePage()"><div style="font-size:14px;font-weight:500;color:#333">' + escapeHtml(d.customer.name || '') + '</div><div style="font-size:12px;color:#999">' + escapeHtml(d.customer.email || '') + '</div></div>' +
+          '<button onclick="logout()" style="background:transparent;color:#d32f2f;border:1px solid #d32f2f;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px">退出</button></div>' +
+          '<div style="display:flex;gap:6px;margin-top:8px">' +
+          '<button onclick="showProfilePage()" style="flex:1;padding:8px;background:#e3f2fd;color:#1a73e8;border:none;border-radius:8px;cursor:pointer;font-size:12px">👤 个人信息</button>' +
+          '<button onclick="showHistory()" style="flex:1;padding:8px;background:#e8f5e9;color:#43a047;border:none;border-radius:8px;cursor:pointer;font-size:12px">📋 报修记录</button>' +
+          '<button onclick="showRepairSearch()" style="flex:1;padding:8px;background:#fff3e0;color:#ff9800;border:none;border-radius:8px;cursor:pointer;font-size:12px">🔍 搜索工单</button></div>' +
+          '</div>';
+      } else {
+        section.innerHTML = '<div style="text-align:center;padding:12px">' +
+          '<div style="font-size:32px;margin-bottom:6px">🔒</div>' +
+          '<div style="font-size:14px;color:#666;margin-bottom:10px">未登录</div>' +
+          '<button onclick="showLoginForm()" style="padding:8px 24px;background:#1a73e8;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">登录 / 注册</button>' +
+          '</div>';
+      }
+    } catch(e) { section.innerHTML = ''; }
+  };
+  xhr.send();
+}
+
+function() {
     try {
       var data = JSON.parse(xhr.responseText);
       if (data.logged_in) {
@@ -1135,6 +1228,9 @@ function toggleTicketDetail(el) {
   }
 }
 function showLoginForm() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/customer/me', false);
+  try { xhr.send(); var d = JSON.parse(xhr.responseText); if (d.logged_in) return; } catch(e) {}
   document.getElementById('loginOverlay').style.display = 'flex';
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPassword').value = '';
@@ -1191,8 +1287,11 @@ function logout() {
   xhr.open('POST', '/api/customer/logout', true);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.onload = function() {
+    closeLoginForm();
     checkAuthStatus();
     document.getElementById('myTicketsSection').style.display = 'none';
+    var navItems = document.querySelectorAll('.bottom-nav .nav-item');
+    if (navItems.length > 0) navItems[0].click();
   };
   xhr.send(JSON.stringify({}));
 }
@@ -1206,14 +1305,17 @@ function checkAuthStatus() {
       var bar = document.getElementById('userAuthBar');
       var display = document.getElementById('userDisplayName');
       if (d.logged_in && d.customer) {
+        document.body.classList.add('logged-in');
         bar.style.display = 'flex';
-        bar.innerHTML = '<div class="avatar">' + (d.customer.name ? d.customer.name.charAt(0) : '?') + '</div>' +
-          '<span class="name">' + escapeHtml(d.customer.name || '') + '</span>' +
+        bar.innerHTML = '<div class="avatar" onclick="showProfilePage()" style="cursor:pointer">' + (d.customer.name ? d.customer.name.charAt(0) : '?') + '</div>' +
+          '<span class="name" onclick="showProfilePage()" style="cursor:pointer">' + escapeHtml(d.customer.name || '') + '</span>' +
           '<span class="badge">已登录</span>' +
-          '<span class="logout-btn" onclick="showLoginForm();logout()">退出</span>';
+          '<span class="logout-btn" onclick="logout()">退出</span>';
         if (display) display.textContent = d.customer.name + ' · 已登录';
+        document.getElementById('myTicketsSection').style.display = 'block';
         loadMyTickets();
       } else {
+        document.body.classList.remove('logged-in');
         bar.style.display = 'flex';
         bar.innerHTML = '<span class="name" style="flex:1;color:#999">🔒 未登录</span>' +
           '<span class="login-btn" onclick="showLoginForm()">登录 / 注册</span>';
@@ -1261,6 +1363,149 @@ function loadMyTickets() {
       }
     } catch(e) { section.style.display = 'none'; }
   };
+  xhr.send();
+}
+
+
+// ========== 个人信息弹窗 ==========
+function showProfilePage() {
+  var existing = document.getElementById('profilePageModal');
+  if (existing) { existing.style.display = 'flex'; loadProfilePageData(); return; }
+  var overlay = document.createElement('div');
+  overlay.id = 'profilePageModal';
+  overlay.className = 'login-overlay show';
+  overlay.style.zIndex = '300';
+  overlay.innerHTML = '<div class="login-modal profile-page-modal">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+    '<h2 style="font-size:16px;margin:0">👤 我的信息</h2>' +
+    '<span onclick="this.parentElement.parentElement.parentElement.style.display=\'none\'" style="cursor:pointer;font-size:20px;color:#999">&times;</span></div>' +
+    '<div id="profilePageContent" style="text-align:center;padding:20px;color:#999">加载中...</div></div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+  loadProfilePageData();
+}
+
+function loadProfilePageData() {
+  var content = document.getElementById('profilePageContent');
+  if (!content) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/customer/me', true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (!d.logged_in || !d.customer) {
+        content.innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div class="empty-text">未登录</div></div>';
+        return;
+      }
+      var name = escapeHtml(d.customer.name || '');
+      var email = escapeHtml(d.customer.email || '');
+      var initial = name ? name.charAt(0) : '?';
+      var xhr2 = new XMLHttpRequest();
+      xhr2.open('GET', '/api/customer/profile', true);
+      xhr2.onload = function() {
+        try {
+          var p = JSON.parse(xhr2.responseText);
+          var phone = escapeHtml(p.phone || '');
+          var company = escapeHtml(p.company || '');
+          var agentName = p.agent_name || (p.agent ? p.agent.agent_name || p.agent.display_name : '') || '';
+          var agentDept = p.agent ? (p.agent.department || '') : '';
+          content.innerHTML =
+            '<div class="profile-header">' +
+            '<div class="big-avatar">' + initial + '</div>' +
+            '<h2>' + name + '</h2>' +
+            '<div class="email">' + email + '</div></div>' +
+            '<div class="info-card"><h3>📋 基本信息</h3>' +
+            '<div class="info-row"><span class="label">手机:</span><span class="value">' + (phone || '未填写') + '</span></div>' +
+            '<div class="info-row"><span class="label">公司:</span><span class="value">' + (company || '未填写') + '</span></div>' +
+            '<div class="info-row"><span class="label">邮箱:</span><span class="value">' + email + '</span></div>' +
+            (agentName ? '<div class="info-row"><span class="label">客服:</span><span class="value">' + agentName + (agentDept ? ' · ' + agentDept : '') + '</span></div>' : '') +
+            '</div>' +
+            '<div style="display:flex;gap:6px">' +
+            '<button onclick="document.getElementById(\'profilePageModal\').style.display=\'none\';showHistory()" style="flex:1;padding:8px;background:#e3f2fd;color:#1a73e8;border:none;border-radius:8px;cursor:pointer;font-size:12px">📋 报修记录</button>' +
+            '<button onclick="document.getElementById(\'profilePageModal\').style.display=\'none\';showRepairSearch()" style="flex:1;padding:8px;background:#e8f5e9;color:#43a047;border:none;border-radius:8px;cursor:pointer;font-size:12px">🔍 搜索工单</button>' +
+            '</div>' +
+            '<button onclick="logout();document.getElementById(\'profilePageModal\').style.display=\'none\'" style="width:100%;margin-top:8px;padding:8px;background:#ffebee;color:#d32f2f;border:none;border-radius:8px;cursor:pointer;font-size:12px">退出登录</button>';
+        } catch(e) { content.innerHTML = '<div class="empty-state"><div class="empty-text">加载失败</div></div>'; }
+      };
+      xhr2.onerror = function() { content.innerHTML = '<div class="empty-state"><div class="empty-text">加载失败</div></div>'; };
+      xhr2.send();
+    } catch(e) { content.innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-text">加载失败</div></div>'; }
+  };
+  xhr.onerror = function() { content.innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-text">网络错误</div></div>'; };
+  xhr.send();
+}
+
+// ========== 报修搜索 ==========
+function showRepairSearch() {
+  var existing = document.getElementById('repairSearchModal');
+  if (existing) { existing.style.display = 'flex'; return; }
+  var overlay = document.createElement('div');
+  overlay.id = 'repairSearchModal';
+  overlay.className = 'login-overlay show';
+  overlay.style.zIndex = '300';
+  overlay.innerHTML = '<div class="login-modal" style="max-width:420px;max-height:80vh;overflow-y:auto;padding:20px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+    '<h2 style="font-size:16px;margin:0">🔍 搜索工单</h2>' +
+    '<span onclick="this.parentElement.parentElement.parentElement.style.display=\'none\'" style="cursor:pointer;font-size:20px;color:#999">&times;</span></div>' +
+    '<div style="display:flex;gap:6px;margin-bottom:12px">' +
+    '<input id="repairSearchInput" class="repair-search-input" placeholder="输入工单编号或问题描述..." onkeydown="if(event.key===\'Enter\') doRepairSearch()">' +
+    '<button class="repair-search-btn" onclick="doRepairSearch()">搜索</button></div>' +
+    '<div id="repairSearchResults" style="text-align:center;color:#999;padding:20px;font-size:13px">输入关键词搜索您的报修记录</div></div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+}
+
+function doRepairSearch() {
+  var q = document.getElementById('repairSearchInput').value.trim();
+  var results = document.getElementById('repairSearchResults');
+  if (!q) { results.innerHTML = '<div style="color:#999;padding:20px">请输入搜索关键词</div>'; return; }
+  results.innerHTML = '<div style="padding:20px;color:#999">⏳ 搜索中...</div>';
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/customer/tickets', true);
+  xhr.onload = function() {
+    try {
+      var ts = JSON.parse(xhr.responseText);
+      if (!ts || ts.length === 0) {
+        results.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">暂无工单记录</div></div>';
+        return;
+      }
+      var ql = q.toLowerCase();
+      var filtered = ts.filter(function(t) {
+        return (t.ticket_number && t.ticket_number.toLowerCase().indexOf(ql) >= 0) ||
+               (t.id && t.id.toLowerCase().indexOf(ql) >= 0) ||
+               (t.issue_description && t.issue_description.toLowerCase().indexOf(ql) >= 0);
+      });
+      if (filtered.length === 0) {
+        results.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">未找到匹配的工单</div></div>';
+        return;
+      }
+      var statusMap = {open:'待处理',assigned:'处理中',confirmed:'待确认',resolved:'已解决',closed:'已关闭'};
+      var h = '<div style="font-size:12px;color:#888;margin-bottom:8px">找到 ' + filtered.length + ' 条记录</div>';
+      for (var i = 0; i < filtered.length; i++) {
+        var t = filtered[i];
+        var tkNo = t.ticket_number || t.id.substring(0,12);
+        var issue = (t.issue_description || '(无描述)').substring(0, 50);
+        var statusBg = t.status==='open'?'#fff3e0':t.status==='assigned'?'#e3f2fd':t.status==='confirmed'?'#e8f5e9':'#f5f5f5';
+        var statusColor = t.status==='open'?'#e65100':t.status==='assigned'?'#1565c0':t.status==='confirmed'?'#2e7d32':'#888';
+        var agentName = t.agent_display || t.agent_name || '';
+        h += '<div class="tk-item" onclick="toggleTicketDetail(this)" style="padding:8px 0;border-bottom:1px solid #f0f0f0;cursor:pointer;text-align:left">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">' +
+          '<span style="color:#1a73e8;font-family:monospace;font-size:11px">' + escapeHtml(tkNo) + '</span>' +
+          '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:' + statusBg + ';color:' + statusColor + '">' + (statusMap[t.status]||t.status) + '</span></div>' +
+          '<div style="font-size:12px;color:#333;margin:2px 0">' + escapeHtml(issue) + '</div>' +
+          '<div style="font-size:10px;color:#999">' + (t.created_at || '').substring(0,10) + (agentName ? ' · ' + escapeHtml(agentName) : '') + '</div>' +
+          '<div class="tk-detail" style="display:none;margin-top:4px;padding:6px 8px;background:#f9f9f9;border-radius:6px;font-size:11px;line-height:1.6">' +
+          '<div><span style="color:#888">编号:</span> ' + escapeHtml(tkNo) + '</div>' +
+          '<div><span style="color:#888">描述:</span> ' + escapeHtml(t.issue_description || '(无)') + '</div>' +
+          (agentName ? '<div><span style="color:#888">客服:</span> ' + escapeHtml(agentName) + '</div>' : '') +
+          '<div><span style="color:#888">时间:</span> ' + escapeHtml(t.created_at || '') + '</div>' +
+          (t.customer_rating > 0 ? '<div><span style="color:#888">评价:</span> ' + '⭐'.repeat(t.customer_rating) + '</div>' : '') +
+          '</div></div>';
+      }
+      results.innerHTML = h;
+    } catch(e) { results.innerHTML = '<div style="color:#d32f2f;padding:20px">搜索失败</div>'; }
+  };
+  xhr.onerror = function() { results.innerHTML = '<div style="color:#d32f2f;padding:20px">网络错误</div>'; };
   xhr.send();
 }
 
@@ -1326,6 +1571,7 @@ function loadMyTickets() {
       <span id="loginToggleText">没有账号？</span>
       <a id="loginToggleLink" onclick="toggleLoginMode()">注册</a>
     </div>
+    <!-- standalone /login page available -->
   </div>
 </div>
 

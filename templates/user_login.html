@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用户登录 - SmartCS 智能客服</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-wrap{width:400px;max-width:100%;animation:fadeIn .5s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.brand{text-align:center;margin-bottom:24px}
+.brand .logo{width:64px;height:64px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 12px}
+.brand h1{color:#fff;font-size:22px;font-weight:600;letter-spacing:1px}
+.brand p{color:rgba(255,255,255,0.7);font-size:13px;margin-top:4px}
+.card{background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,0.15)}
+.card h2{font-size:20px;color:#333;margin-bottom:4px;text-align:center}
+.card .sub{font-size:13px;color:#888;text-align:center;margin-bottom:24px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;color:#555;font-weight:500;margin-bottom:4px}
+.form-group input{width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:10px;font-size:15px;outline:none;transition:border .2s,box-shadow .2s;font-family:inherit}
+.form-group input:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.15)}
+.form-group input.error{border-color:#e53935}
+.error-msg{font-size:13px;color:#e53935;margin-bottom:12px;display:none;padding:8px 12px;background:#fce4ec;border-radius:8px;line-height:1.5}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(102,126,234,0.4)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.toggle-link{text-align:center;margin-top:16px;font-size:14px;color:#888}
+.toggle-link a{color:#667eea;text-decoration:none;font-weight:500;cursor:pointer}
+.toggle-link a:hover{text-decoration:underline}
+.toggle-link .sep{margin:0 6px;color:#ddd}
+.footer{text-align:center;margin-top:20px}
+.footer a{color:rgba(255,255,255,0.7);font-size:13px;text-decoration:none;transition:color .2s}
+.footer a:hover{color:#fff}
+.footer .dot{color:rgba(255,255,255,0.3);margin:0 8px}
+@media(max-width:480px){
+  body{padding:16px;align-items:flex-start;padding-top:40px}
+  .card{padding:24px 20px;border-radius:14px}
+  .brand .logo{width:56px;height:56px;font-size:28px}
+  .brand h1{font-size:20px}
+  .form-group input{font-size:16px;padding:11px 12px}
+  .btn{font-size:15px;padding:11px}
+}
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="brand">
+    <div class="logo">🤖</div>
+    <h1>SmartCS 智能客服</h1>
+    <p>7×24小时智能在线服务</p>
+  </div>
+  <div class="card">
+    <h2 id="formTitle">用户登录</h2>
+    <div class="sub" id="formSub">登录后可查看历史工单和报修记录</div>
+    <div class="error-msg" id="errorMsg"></div>
+    <form id="loginForm" onsubmit="return false">
+      <div class="form-group" id="nameGroup" style="display:none">
+        <label for="inputName">姓名</label>
+        <input type="text" id="inputName" placeholder="您的姓名（选填）" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label for="inputEmail">邮箱</label>
+        <input type="email" id="inputEmail" placeholder="请输入邮箱地址" autocomplete="email" required>
+      </div>
+      <div class="form-group">
+        <label for="inputPassword">密码</label>
+        <input type="password" id="inputPassword" placeholder="请输入密码" autocomplete="current-password" required>
+      </div>
+      <div class="form-group" id="confirmGroup" style="display:none">
+        <label for="inputConfirm">确认密码</label>
+        <input type="password" id="inputConfirm" placeholder="再次输入密码" autocomplete="new-password">
+      </div>
+      <button class="btn btn-primary" id="submitBtn" onclick="handleSubmit()">登录</button>
+    </form>
+    <div class="toggle-link">
+      <span id="toggleText">还没有账号？</span>
+      <a id="toggleLink" onclick="toggleMode()">注册账号</a>
+    </div>
+  </div>
+  <div class="footer">
+    <a href="/">返回客服首页</a>
+  </div>
+</div>
+
+<script>
+var isRegister = false;
+
+function toggleMode() {
+  isRegister = !isRegister;
+  var title = document.getElementById('formTitle');
+  var sub = document.getElementById('formSub');
+  var nameGroup = document.getElementById('nameGroup');
+  var confirmGroup = document.getElementById('confirmGroup');
+  var submitBtn = document.getElementById('submitBtn');
+  var toggleText = document.getElementById('toggleText');
+  var toggleLink = document.getElementById('toggleLink');
+  var inputEmail = document.getElementById('inputEmail');
+  var inputPassword = document.getElementById('inputPassword');
+
+  if (isRegister) {
+    title.textContent = '注册账号';
+    sub.textContent = '创建账号，查看历史工单和报修记录';
+    nameGroup.style.display = 'block';
+    confirmGroup.style.display = 'block';
+    submitBtn.textContent = '注册';
+    toggleText.textContent = '已有账号？';
+    toggleLink.textContent = '登录';
+    inputPassword.autocomplete = 'new-password';
+  } else {
+    title.textContent = '用户登录';
+    sub.textContent = '登录后可查看历史工单和报修记录';
+    nameGroup.style.display = 'none';
+    confirmGroup.style.display = 'none';
+    submitBtn.textContent = '登录';
+    toggleText.textContent = '还没有账号？';
+    toggleLink.textContent = '注册账号';
+    inputPassword.autocomplete = 'current-password';
+  }
+  document.getElementById('errorMsg').style.display = 'none';
+}
+
+function showError(msg) {
+  var el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('errorMsg').style.display = 'none';
+}
+
+function handleSubmit() {
+  var email = document.getElementById('inputEmail').value.trim();
+  var password = document.getElementById('inputPassword').value;
+  var confirmPwd = isRegister ? document.getElementById('inputConfirm').value : '';
+  var name = isRegister ? document.getElementById('inputName').value.trim() : '';
+
+  hideError();
+
+  if (!email) { showError('请输入邮箱地址'); return; }
+  if (!password) { showError('请输入密码'); return; }
+  if (password.length < 6) { showError('密码不能少于6位'); return; }
+  if (isRegister && password !== confirmPwd) { showError('两次输入的密码不一致'); return; }
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = isRegister ? '注册中...' : '登录中...';
+
+  var url = isRegister ? '/api/customer/register' : '/api/customer/login';
+  var data = {email: email, password: password};
+  if (isRegister && name) data.name = name;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', url, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    btn.disabled = false;
+    btn.textContent = isRegister ? '注册' : '登录';
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        window.location.href = '/';
+      } else {
+        showError(d.error || '操作失败，请重试');
+      }
+    } catch(e) {
+      showError('网络异常，请稍后重试');
+    }
+  };
+  xhr.onerror = function() {
+    btn.disabled = false;
+    btn.textContent = isRegister ? '注册' : '登录';
+    showError('网络连接失败，请检查网络');
+  };
+  xhr.send(JSON.stringify(data));
+}
+
+// Enter key support
+document.getElementById('loginForm').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleSubmit();
+  }
+});
+</script>
+</body>
+</html>
