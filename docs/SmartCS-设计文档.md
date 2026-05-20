@@ -193,12 +193,13 @@ class TicketEngine:
 
 ```python
 class MessageEngine:
-    def send(customer_id, conversation_id, content, msg_type, image_url=None, audio_url=None)
+    def send(sender_id, conversation_id, content, msg_type, 
+             image_url=None, audio_url=None, stt_text=None)
     def send_system(ticket_id, content)  # 系统消息（状态变更通知）
     def poll_messages(conversation_id, since_id)  # 3s 轮询
-    def upload_image(file) -> url
-    def upload_audio(file) -> url
-    def stt_transcribe(audio_path) -> str  # 调用 Whisper
+    def upload_image(file) -> url       # 用户/工程师均可上传
+    def upload_audio(file) -> url       # 用户/工程师均可上传
+    def stt_transcribe(audio_path) -> str  # 调用 Whisper（内置）
 ```
 
 ### 2.3 AI 引擎模块
@@ -230,34 +231,72 @@ ai_model_name = "Qwen/Qwen2.5-14B-Instruct"
 
 ### 2.4 语音识别模块（STT）
 
-**职责：** 语音→文字转换，对接 AI 或客服
+**职责：** 语音→文字转换，对接 AI 或客服。用户和工程师均可发送语音消息。
+
+#### 内置 STT 引擎选型（内网友好，无需云端 API）
+
+| 方案 | 部署 | CPU 可用 | GPU 加速 | 中文质量 | 推荐场景 |
+|------|------|---------|---------|---------|---------|
+| **faster-whisper** | `pip install faster-whisper` | ✅ small 模型 | ✅ CUDA | ⭐⭐⭐⭐ | **默认推荐** |
+| **whisper.cpp** | 编译安装 | ✅✅ 极快 | ✅ | ⭐⭐⭐⭐ | **低资源首选** (1-2核) |
+| openai-whisper | pip install | ⚠️ 慢 | ✅ | ⭐⭐⭐⭐⭐ | 有 GPU 机器 |
+| FunASR (阿里) | pip install | ✅ | ✅ | ⭐⭐⭐⭐⭐ | 中文专项优化 |
 
 ```python
 class STTService:
     def __init__(self):
-        self.engine = config('stt_engine')  # 'whisper_local' | 'cloud_api'
+        self.engine = config('stt_engine')   # 'faster_whisper' | 'whisper_cpp' | 'openai_whisper' | 'cloud_api'
+        self.model_size = config('stt_model_size', 'small')  # tiny|base|small|medium|large
+        self.language = config('stt_language', 'zh')          # zh|en|auto
     
     def transcribe(audio_path: str) -> TranscriptionResult
-        # Whisper 本地：调用 whisper.cpp / faster-whisper
-        # 云端：调用配置的 ASR API
+        # faster-whisper: faster_whisper.WhisperModel(model_size, device)
+        # whisper.cpp: subprocess whisper-cli --file ...
+        # cloud: 配置的 ASR API
     
     def transcribe_async(audio_path: str, callback_url: str)
         # 异步模式：大文件或批量场景
 ```
 
-**语音消息处理流程：**
+#### 语音消息处理流程（用户+工程师双向）：
 
 ```
-用户录音 → .webm 文件上传 → STT 转文字
-                                   │
-                    ┌──────────────┼──────────────┐
-                    │                             │
-             工单=created                   工单=processing
-                    │                             │
-               AI 知识库搜索                   拼接文本消息
-                    │                          + 语音播放按钮
-               AI 回复                         → 发给工程师
+     用户录音        工程师录音
+        │                │
+        ▼                ▼
+   ┌──────────────────────────┐
+   │   .webm 文件上传          │
+   └──────────┬───────────────┘
+              │
+              ▼
+   ┌──────────────────────────┐
+   │   内置 STT 引擎           │
+   │   (faster-whisper /       │
+   │    whisper.cpp)           │
+   │   本地运行，无需联网       │
+   └──────────┬───────────────┘
+              │
+    ┌─────────┼─────────┐
+    │         │         │
+ 用户AI阶段  用户已转   工程师回复
+  (created)  人工       用户
+    │        (proc.)      │
+    ▼         ▼           ▼
+ AI搜索     文本消息    文本消息
+ AI回复     +语音按钮   +语音按钮
+           →工程师     →用户
 ```
+
+**配置项（管理后台→配置管理→语音识别）：**
+
+| key | 默认值 | 可选值 |
+|-----|--------|--------|
+| `stt_engine` | `faster_whisper` | `faster_whisper` / `whisper_cpp` / `openai_whisper` / `cloud_api` |
+| `stt_model_size` | `small` | `tiny` / `base` / `small` / `medium` / `large` |
+| `stt_language` | `zh` | `zh` / `en` / `auto` |
+| `stt_gpu` | `false` | `true` / `false`（有 GPU 时自动启用） |
+| `asr_api_key` | `''` | cloud_api 模式时使用 |
+| `asr_api_url` | `''` | cloud_api 模式时使用 |
 
 ### 2.5 知识库模块
 
