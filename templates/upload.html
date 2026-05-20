@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识库管理 - AI 客服</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+        .header h1 { font-size: 18px; font-weight: 500; }
+        .header .avatar { width: 36px; height: 36px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .nav-link { position: absolute; right: 20px; top: 18px; color: rgba(255,255,255,0.8); text-decoration: none; font-size: 13px; }
+        .container { max-width: 800px; margin: 30px auto; padding: 0 20px; }
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 16px; margin-bottom: 16px; color: #333; display: flex; align-items: center; justify-content: space-between; }
+        .password-area { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+        .password-area input { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+        .password-area input:focus { border-color: #667eea; }
+        .password-area button { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .password-area button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .drop-zone { border: 2px dashed #ddd; border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.3s; display: none; }
+        .drop-zone:hover, .drop-zone.drag { border-color: #667eea; background: #f8f9ff; }
+        .drop-zone.show { display: block; }
+        .drop-zone p { color: #666; margin-bottom: 8px; }
+        .drop-zone .formats { font-size: 12px; color: #999; }
+        .drop-zone .icon { font-size: 48px; margin-bottom: 12px; }
+        #fileInput { display: none; }
+        .file-list { margin-top: 16px; }
+        .file-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; }
+        .file-item .name { font-size: 14px; color: #333; }
+        .file-item .status { font-size: 12px; color: #666; }
+        .file-item .status.success { color: #28a745; }
+        .file-item .status.error { color: #dc3545; }
+        .knowledge-list { max-height: 500px; overflow-y: auto; }
+        .knowledge-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; gap: 12px; }
+        .knowledge-item:last-child { border-bottom: none; }
+        .knowledge-item .info { flex: 1; min-width: 0; }
+        .knowledge-item .name { font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .knowledge-item .meta { font-size: 12px; color: #999; }
+        .knowledge-item .actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .btn-sm { padding: 5px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; transition: opacity 0.2s; }
+        .btn-sm:hover { opacity: 0.8; }
+        .btn-edit { background: #e8f0fe; color: #1a73e8; }
+        .btn-delete { background: #fce8e6; color: #d93025; }
+
+        /* 编辑弹窗 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: white; border-radius: 12px; padding: 24px; width: 90%; max-width: 700px; max-height: 85vh; display: flex; flex-direction: column; }
+        .modal-content h3 { margin-bottom: 12px; font-size: 16px; color: #333; }
+        .modal-content textarea { flex: 1; width: 100%; min-height: 300px; border: 1px solid #ddd; border-radius: 8px; padding: 12px; font-size: 13px; font-family: monospace; resize: vertical; outline: none; }
+        .modal-content textarea:focus { border-color: #667eea; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+        .modal-buttons button { padding: 8px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .btn-save { background: #667eea; color: white; }
+        .btn-cancel { background: #f5f5f5; color: #666; }
+        .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; font-size: 14px; z-index: 2000; animation: slideIn 0.3s ease; display: none; }
+        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast.success { background: #28a745; }
+        .toast.error { background: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="avatar">📚</div>
+        <h1>知识库管理</h1>
+        <a href="/" class="nav-link">💬 回到客服</a>
+    </div>
+    <div class="container">
+        <div class="card" id="loginCard">
+            <h2>🔐 管理员验证</h2>
+            <div class="password-area" id="passwordArea">
+                <input type="password" id="passwordInput" placeholder="请输入管理员密码..." onkeydown="if(event.key==='Enter')verifyPassword()">
+                <button onclick="verifyPassword()" id="verifyBtn">验证</button>
+            </div>
+        </div>
+        <div class="card" id="uploadCard" style="display:none;">
+            <h2>📤 上传文件</h2>
+            <div class="drop-zone" id="dropZone">
+                <div class="icon">📁</div>
+                <p>拖拽文件到此处，或点击选择</p>
+                <div class="formats">支持格式：Word (.docx) · PDF · PowerPoint (.pptx) · Markdown (.md) · 文本 (.txt)</div>
+            </div>
+            <input type="file" id="fileInput" multiple accept=".docx,.pdf,.pptx,.md,.txt">
+            <div class="file-list" id="fileList"></div>
+        </div>
+        <div class="card" id="knowledgeCard" style="display:none;">
+            <h2>📋 知识库文档 <span id="knowledgeCount" style="font-weight:normal;color:#999;font-size:13px;"></span></h2>
+            <div class="knowledge-list" id="knowledgeList">加载中...</div>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗 -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h3>✏️ 编辑文档: <span id="editFilename" style="font-weight:normal;"></span></h3>
+            <textarea id="editContent"></textarea>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeEdit()">取消</button>
+                <button class="btn-save" id="saveBtn" onclick="saveEdit()">💾 保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let adminPassword = '';
+        let currentEditFile = '';
+
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + type;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+
+        async function verifyPassword() {
+            const pwd = document.getElementById('passwordInput').value.trim();
+            if (!pwd) return;
+            const btn = document.getElementById('verifyBtn');
+            btn.disabled = true;
+            btn.textContent = '验证中...';
+            try {
+                const resp = await fetch('/api/knowledge/list?password=' + encodeURIComponent(pwd));
+                const data = await resp.json();
+                if (resp.status === 403 || data.error) {
+                    alert('密码错误，请重试');
+                    btn.disabled = false;
+                    btn.textContent = '验证';
+                    return;
+                }
+                adminPassword = pwd;
+                document.getElementById('loginCard').style.display = 'none';
+                document.getElementById('uploadCard').style.display = 'block';
+                document.getElementById('knowledgeCard').style.display = 'block';
+                initUpload();
+                renderList(data);
+            } catch (err) {
+                alert('验证失败，请重试');
+                btn.disabled = false;
+                btn.textContent = '验证';
+            }
+        }
+
+        function initUpload() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const fileList = document.getElementById('fileList');
+            dropZone.classList.add('show');
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag');
+                handleFiles(e.dataTransfer.files);
+            });
+            fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+            async function handleFiles(files) {
+                for (const file of files) {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.innerHTML = '<span class="name">' + file.name + '</span><span class="status">上传中...</span>';
+                    fileList.appendChild(item);
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('password', adminPassword);
+                    try {
+                        const resp = await fetch('/api/upload', { method: 'POST', body: formData });
+                        const data = await resp.json();
+                        if (data.success) {
+                            item.querySelector('.status').textContent = '✅ ' + data.message;
+                            item.querySelector('.status').classList.add('success');
+                        } else {
+                            item.querySelector('.status').textContent = '❌ ' + data.error;
+                            item.querySelector('.status').classList.add('error');
+                        }
+                    } catch (err) {
+                        item.querySelector('.status').textContent = '❌ 上传失败';
+                        item.querySelector('.status').classList.add('error');
+                    }
+                }
+                setTimeout(loadKnowledge, 1000);
+            }
+        }
+
+        async function loadKnowledge() {
+            try {
+                const resp = await fetch('/api/knowledge/list?password=' + encodeURIComponent(adminPassword));
+                const files = await resp.json();
+                renderList(files);
+            } catch (err) {
+                document.getElementById('knowledgeList').innerHTML = '<p style="color:#dc3545;text-align:center;padding:20px;">加载失败</p>';
+            }
+        }
+
+        function renderList(files) {
+            document.getElementById('knowledgeCount').textContent = '(' + files.length + ' 个文件)';
+            if (files.length === 0) {
+                document.getElementById('knowledgeList').innerHTML = '<p style="color:#999;text-align:center;padding:20px;">暂无知识文件</p>';
+                return;
+            }
+            document.getElementById('knowledgeList').innerHTML = files.map(f =>
+                '<div class="knowledge-item">' +
+                    '<div class="info">' +
+                        '<div class="name">📄 ' + f.name + '</div>' +
+                        '<div class="meta">' + (f.size/1024).toFixed(1) + ' KB · ' + f.modified + '</div>' +
+                    '</div>' +
+                    '<div class="actions">' +
+                        '<button class="btn-sm btn-edit" onclick="editFile(\'' + f.name + '\')">✏️ 编辑</button>' +
+                        '<button class="btn-sm btn-delete" onclick="deleteFile(\'' + f.name + '\')">🗑️ 删除</button>' +
+                    '</div>' +
+                '</div>'
+            ).join('');
+        }
+
+        async function editFile(filename) {
+            currentEditFile = filename;
+            document.getElementById('editFilename').textContent = filename;
+            document.getElementById('editContent').value = '加载中...';
+            document.getElementById('editModal').classList.add('show');
+            document.getElementById('saveBtn').disabled = false;
+
+            try {
+                const resp = await fetch('/api/knowledge/detail?password=' + encodeURIComponent(adminPassword) + '&filename=' + encodeURIComponent(filename));
+                const data = await resp.json();
+                if (data.content !== undefined) {
+                    document.getElementById('editContent').value = data.content;
+                } else {
+                    document.getElementById('editContent').value = '// 读取失败: ' + (data.error || '未知错误');
+                }
+            } catch (err) {
+                document.getElementById('editContent').value = '// 网络错误';
+            }
+        }
+
+        function closeEdit() {
+            document.getElementById('editModal').classList.remove('show');
+            currentEditFile = '';
+        }
+
+        async function saveEdit() {
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+            try {
+                const resp = await fetch('/api/knowledge/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        password: adminPassword,
+                        filename: currentEditFile,
+                        content: document.getElementById('editContent').value
+                    })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    showToast('✅ ' + data.message, 'success');
+                    closeEdit();
+                    loadKnowledge();
+                } else {
+                    showToast('❌ ' + data.error, 'error');
+                }
+            } catch (err) {
+                showToast('❌ 保存失败', 'error');
+            }
+            btn.disabled = false;
+            btn.textContent = '💾 保存';
+        }
+
+        function deleteFile(filename) {
+            if (!confirm('确认删除「' + filename + '」吗？此操作不可恢复。')) return;
+            fetch('/api/knowledge/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPassword, filename: filename })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('✅ ' + data.message, 'success');
+                    loadKnowledge();
+                } else {
+                    showToast('❌ ' + data.error, 'error');
+                }
+            })
+            .catch(() => showToast('❌ 删除失败', 'error'));
+        }
+
+        document.getElementById('passwordInput').focus();
+    </script>
+</body>
+</html>

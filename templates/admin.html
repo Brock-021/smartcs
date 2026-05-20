@@ -1,0 +1,2665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SmartCS">
+<title>后台管理 - SmartCS v4</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f0f2f5;min-height:100vh}
+.header{background:linear-gradient(135deg,#1a73e8 0%,#0d47a1 100%);color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.header h1{font-size:18px;font-weight:500}
+.header .user{display:flex;align-items:center;gap:12px;font-size:13px}
+.header .user button{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px}
+.header .user a{color:rgba(255,255,255,0.8);font-size:12px;text-decoration:none}
+.nav-tabs{background:#fff;display:flex;border-bottom:2px solid #e0e0e0;padding:0 24px;position:sticky;top:50px;z-index:49}
+.nav-tabs .tab{padding:12px 20px;font-size:14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:#666;transition:all .2s}
+.nav-tabs .tab:hover{color:#1a73e8}
+.nav-tabs .tab.active{color:#1a73e8;border-bottom-color:#1a73e8;font-weight:500}
+.nav-tabs .tab .count{background:#ff5252;color:#fff;font-size:11px;padding:0 7px;border-radius:8px;margin-left:4px}
+.content{padding:20px 24px;display:none}
+.content.active{display:block}
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:16px;overflow:hidden}
+.card-header{padding:14px 18px;border-bottom:1px solid #f0f0f0;font-size:14px;font-weight:600;color:#333;display:flex;justify-content:space-between;align-items:center}
+.card-body{padding:16px 18px}
+.search-bar{display:flex;gap:10px;margin-bottom:14px}
+.search-bar input{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none}
+.search-bar input:focus{border-color:#1a73e8}
+.search-bar button{padding:8px 16px;background:#1a73e8;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+table th{padding:10px 12px;background:#f8f9fa;color:#555;text-align:left;font-weight:500;border-bottom:2px solid #e0e0e0;white-space:nowrap}
+table td{padding:10px 12px;border-bottom:1px solid #f0f0f0;color:#333}
+table tr:hover{background:#f8f9fa}
+table tr.cursor-pointer{cursor:pointer}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;color:#fff}
+.bg-open{background:#ff9800}
+.bg-assigned{background:#1a73e8}
+.bg-closed{background:#999}
+.bg-resolved{background:#43a047}
+.bg-confirmed{background:#43a047}
+.status-text{font-size:13px;color:#666;padding:10px 0;text-align:center}
+.pagination{display:flex;justify-content:center;gap:6px;padding:14px 0}
+.pagination button{padding:6px 12px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:#333}
+.pagination button.active{background:#1a73e8;color:#fff;border-color:#1a73e8}
+.pagination button:disabled{opacity:.4;cursor:default}
+.stats-row{display:flex;gap:14px;margin-bottom:16px}
+.stat-card{flex:1;background:#fff;border-radius:10px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.stat-card .num{font-size:28px;font-weight:700;color:#1a73e8}
+.stat-card .label{font-size:12px;color:#888;margin-top:4px}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:600px;max-width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.modal h2{font-size:17px;margin-bottom:14px;color:#333}
+.modal .row{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.modal .row .field{flex:1;min-width:160px}
+.modal .row label{display:block;font-size:12px;color:#888;margin-bottom:3px}
+.modal .row .val{font-size:14px;color:#333;padding:6px 0}
+.modal input,.modal textarea,.modal select{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:10px}
+.modal input:focus,.modal textarea:focus{border-color:#1a73e8}
+.modal .btn-bar{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.modal .btn-bar button{padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13px}
+.modal .btn-primary{background:#1a73e8;color:#fff}
+.modal .btn-danger{background:#ff5252;color:#fff}
+.modal .btn-cancel{background:#f0f0f0;color:#333}
+.detail-section{margin-bottom:12px}
+.detail-section h3{font-size:14px;color:#555;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:4px}
+.stars{color:#ffb300;font-size:16px}
+.ticket-row-info{font-size:12px;color:#555;line-height:1.8}
+.config-form label{display:block;font-size:13px;color:#555;margin-bottom:4px;font-weight:500}
+.config-form input{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;margin-bottom:14px;font-family:monospace}
+.config-form input:focus{border-color:#1a73e8}
+.config-form .hint{font-size:11px;color:#999;margin-top:-10px;margin-bottom:14px}
+.config-form .save-btn{padding:10px 28px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;transition:all .2s}
+.config-form .save-btn:hover{background:#1557b0}
+.config-form .save-btn:disabled{opacity:.5;cursor:not-allowed}
+.reason-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0}
+.reason-row .name{flex:1;font-size:13px}
+.reason-row .order{font-size:11px;color:#999;margin-right:12px}
+.reason-row button{padding:4px 10px;background:#ff5252;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px}
+.add-reason-bar{display:flex;gap:8px;margin-top:10px}
+.add-reason-bar input{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none}
+.add-reason-bar input:focus{border-color:#1a73e8}
+.add-reason-bar button{padding:8px 16px;background:#1a73e8;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px}
+
+/* ===== 移动端响应式 (<768px) ===== */
+@media(max-width:767px){
+  .header{padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top,0px))}
+  .header h1{font-size:15px}
+  .header .user{gap:6px;font-size:12px}
+  .header .user button,.header .user a{padding:6px 10px;min-height:44px;display:inline-flex;align-items:center}
+  /* 右侧汉堡菜单按钮 */
+  .hamburger{display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:18px;min-width:44px;min-height:44px;margin-left:6px}
+  /* TAB 导航：可收起 */
+  .nav-tabs{flex-direction:column;padding:0;overflow-y:auto;max-height:0;transition:max-height .3s ease;position:fixed;top:50px;left:0;right:0;z-index:100;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+  .nav-tabs.open{max-height:80vh}
+  .nav-tabs .tab{padding:12px 16px;border-bottom:1px solid #f0f0f0}
+  .nav-tabs .tab.active{border-bottom-color:#1a73e8;border-left:3px solid #1a73e8}
+  /* 内容区 */
+  .content{padding:12px 10px}
+  .card-header{font-size:13px;padding:10px 12px;flex-wrap:wrap;gap:6px}
+  .card-body{padding:10px 12px}
+  .stats-row{flex-wrap:wrap;gap:8px}
+  .stat-card{flex:1 1 calc(50% - 8px);min-width:calc(50% - 8px);padding:12px 8px}
+  .stat-card .num{font-size:22px}
+  /* 表格 → 卡片视图 */
+  table{font-size:12px}
+  table th{padding:8px 6px;font-size:11px}
+  table td{padding:8px 6px;font-size:12px}
+  .search-bar{flex-wrap:wrap}
+  .search-bar input{width:100%!important;margin-bottom:4px}
+  .search-bar select{width:100%}
+  .search-bar button{width:48%}
+  /* 卡片表格视图 */
+  .table-as-cards table, .table-as-cards thead, .table-as-cards tbody, .table-as-cards th, .table-as-cards td, .table-as-cards tr{display:block}
+  .table-as-cards thead tr{position:absolute;top:-9999px;left:-9999px}
+  .table-as-cards tr{border:1px solid #e0e0e0;border-radius:8px;padding:10px;margin-bottom:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+  .table-as-cards td{border:none;position:relative;padding:6px 0 6px 50%;font-size:13px;text-align:right}
+  .table-as-cards td:before{content:attr(data-label);position:absolute;left:10px;width:50%;font-weight:600;color:#555;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .modal{width:95%;padding:16px;border-radius:12px}
+  .modal .row{flex-direction:column;gap:8px}
+  .modal .row .field{min-width:auto}
+  .pagination button{padding:8px 14px;font-size:13px;min-height:44px}
+  .config-form input{font-size:16px}
+  .chart-bars{height:80px!important}
+}
+
+/* iOS/Android 全面屏适配 */
+@supports(padding:max(0px)){
+  .header{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+  body{padding-bottom:max(0px,env(safe-area-inset-bottom))}
+}
+
+/* 桌面端隐藏汉堡按钮 */
+@media(min-width:768px){.hamburger{display:none}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>⚙️ SmartCS 后台管理</h1>
+  <div class="user">
+    <span>{{ agent_name }}</span>
+    <a href="/agent/dashboard">📋 客服工作台</a>
+    <button onclick="logout()">退出</button>
+    <button class="hamburger" id="navToggle" onclick="toggleMobileNav()">☰</button>
+  </div>
+</div>
+<div class="nav-tabs" id="navTabs">
+  <div class="tab active" id="tabTickets" onclick="switchPage('tickets',this)">📋 工单管理 <span class="count" id="openCount">0</span></div>
+  <div class="tab" id="tabStats" onclick="switchPage('stats',this)">📊 数据统计</div>
+  <div class="tab" id="tabUsers" onclick="switchPage('users',this)">👥 用户管理</div>
+  <div class="tab" id="tabAgents" onclick="switchPage('agents',this)">👤 客服管理</div>
+  <div class="tab" id="tabConfig" onclick="switchPage('config',this)">⚙️ 系统配置</div>
+  <div class="tab" id="tabReasons" onclick="switchPage('reasons',this)">🏷️ 关闭原因</div>
+  <div class="tab" id="tabUpgrades" onclick="switchPage('upgrades',this)">📋 系统升级记录</div>
+  <div class="tab" id="tabSystems" onclick="switchPage('systems',this)">🔧 负责系统</div>
+  <div class="tab" id="tabWebhooks" onclick="switchPage('webhooks',this)">🔗 集成网关</div>
+  <div class="tab" id="tabAuth" onclick="switchPage('auth',this)">🔐 认证管理</div>
+  <div class="tab" id="tabAudit" onclick="switchPage('audit',this)">📋 审计日志</div>
+</div>
+
+<div class="content active" id="pageTickets">
+  <div class="stats-row" id="ticketStats"></div>
+  <div class="card">
+    <div class="card-header">
+      <span>全部工单</span>
+      <div class="search-bar" style="margin:0;gap:6px">
+        <input type="text" id="ticketSearch" placeholder="搜索工号或客户..." style="width:200px;padding:6px 10px;margin:0">
+        <select id="ticketStatusFilter" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px" onchange="loadTickets()">
+          <option value="">全部状态</option>
+          <option value="open">待处理</option>
+          <option value="assigned">处理中</option>
+          <option value="confirmed">待确认</option>
+          <option value="closed">已关闭</option>
+          <option value="resolved">已解决</option>
+        </select>
+        <button onclick="loadTickets()">搜索</button>
+        <button onclick="exportCSV()" style="background:#43a047;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px">📥 导出CSV</button>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="ticketTable"><tr><td colspan="9" class="status-text">加载中...</td></tr></table>
+    </div>
+    <div class="pagination" id="ticketPagination"></div>
+  </div>
+</div>
+
+<div class="content" id="pageUsers">
+  <div class="card">
+    <div class="card-header"><span>客户列表</span>
+      <div class="search-bar" style="margin:0;gap:6px">
+        <input type="text" id="userSearch" placeholder="搜索客户名或ID..." style="width:200px;padding:6px 10px;margin:0">
+        <button onclick="loadUsers()">搜索</button>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="userTable"><tr><td colspan="8" class="status-text">加载中...</td></tr></table>
+    </div>
+    <div class="pagination" id="userPagination"></div>
+  </div>
+</div>
+
+<div class="content" id="pageAgents">
+  <div class="card">
+    <div class="card-header"><span>客服人员</span><button onclick="showAddAgent()" style="background:#1a73e8;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 添加客服</button></div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="agentTable"><tr><td colspan="11" class="status-text">加载中...</td></tr></table>
+    </div>
+  </div>
+</div>
+
+<div class="content" id="pageConfig">
+  <div class="card">
+    <div class="card-header"><span>⚙️ 系统配置</span></div>
+    <div class="card-body config-form">
+      <label>模型接口地址（API Base URL）</label>
+      <input type="text" id="cfgApiBaseUrl" placeholder="https://api.deepseek.com/v1/chat/completions">
+      <div class="hint">例如：https://api.deepseek.com/v1/chat/completions 或自定义 OpenAI 兼容接口</div>
+      
+      <label>API Key</label>
+      <input type="password" id="cfgApiKey" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+      <div class="hint">模型接口的 API 密钥</div>
+      
+      <label>模型名称</label>
+      <input type="text" id="cfgModelName" placeholder="deepseek-chat">
+      <div class="hint">例如：deepseek-chat, gpt-4o-mini 等</div>
+      
+      <label>管理员密码</label>
+      <input type="password" id="cfgAdminPassword" placeholder="用于知识库上传等管理操作">
+      <div class="hint">用于访问知识库上传页面等管理功能</div>
+      
+      <button class="save-btn" id="configSaveBtn" onclick="saveConfig()">💾 保存配置</button>
+      <span id="configStatus" style="font-size:12px;color:#43a047;margin-left:12px;display:none">✅ 已保存</span>
+    </div>
+  </div>
+</div>
+
+<div class="content" id="pageReasons">
+  <div class="card">
+    <div class="card-header"><span>🏷️ 关闭原因管理</span><span style="font-size:11px;color:#999">客服关闭工单时可选择的分类</span></div>
+    <div class="card-body">
+      <div id="reasonsList"></div>
+      <div class="add-reason-bar">
+        <input type="text" id="newReasonName" placeholder="输入新的关闭原因..." onkeydown="if(event.key==='Enter')addCloseReason()">
+        <button onclick="addCloseReason()">+ 添加</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content" id="pageUpgrades">
+  <div class="card">
+    <div class="card-header"><span>📋 系统升级记录</span><button onclick="showAddUpgrade()" style="background:#1a73e8;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 添加记录</button></div>
+    <div class="card-body" style="overflow-x:auto">
+      <table id="upgradeTable">
+        <tr><th>版本号</th><th>发布日期</th><th>升级内容</th><th>记录时间</th><th>操作</th></tr>
+        <tr><td colspan="5" class="status-text">加载中...</td></tr>
+      </table>
+    </div>
+    <div class="pagination" id="upgradePagination" data-page="1"></div>
+</div></div>
+
+<div class="content" id="pageSystems">
+  <div class="card">
+    <div class="card-header"><span>🔧 负责系统管理</span><button onclick="showAddSystem()" style="background:#1a73e8;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 添加系统</button></div>
+    <div class="card-body">
+      <table id="systemTable" style="margin-bottom:16px">
+        <tr><th>系统名称</th><th>描述</th><th>负责客服</th><th>操作</th></tr>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span>👤 为客服分配负责系统</span></div>
+    <div class="card-body" id="agentSystemAssign"></div>
+  </div>
+</div>
+  </div>
+</div>
+
+<!-- 数据统计页面 -->
+<div class="content" id="pageStats">
+  <div class="card">
+    <div class="card-header"><span>📊 今日数据概览</span></div>
+    <div class="card-body">
+      <div class="stats-row" id="todayStatsRow">
+        <div class="stat-card"><div class="num" id="stTodayTotal">-</div><div class="label">今日工单</div></div>
+        <div class="stat-card"><div class="num" id="stTodayOpen">-</div><div class="label">待处理</div></div>
+        <div class="stat-card"><div class="num" id="stTodayClosed">-</div><div class="label">已关闭</div></div>
+        <div class="stat-card"><div class="num" id="stTodayRating">-</div><div class="label">平均评分</div></div>
+        <div class="stat-card"><div class="num" id="stTodayResp">-</div><div class="label">响应(分钟)</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span>📈 近7天工单趋势</span></div>
+    <div class="card-body">
+      <div class="chart-bars" id="weeklyChart" style="display:flex;align-items:flex-end;height:120px;gap:12px;padding:10px 0"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span>🏆 客服绩效排名</span></div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="agentStatsTable"><tr><td colspan="6" class="status-text">加载中...</td></tr></table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== Webhook 集成网关 ===== -->
+<div class="content" id="pageWebhooks">
+  <div class="card">
+    <div class="card-header"><span>🔗 Webhook 配置</span></div>
+    <div class="card-body config-form">
+      <div style="display:none" id="webhookEditId"></div>
+      <label>名称 <span style="color:#e53935">*</span></label>
+      <input type="text" id="whName" placeholder="例如：企业微信通知">
+      <label>回调 URL <span style="color:#e53935">*</span></label>
+      <input type="url" id="whUrl" placeholder="https://...">
+      <label>密钥（可选）</label>
+      <input type="text" id="whSecret" placeholder="用于 X-Webhook-Secret 头">
+      <label>事件 <span style="color:#888;font-weight:400;font-size:11px">多个用逗号分隔</span></label>
+      <input type="text" id="whEvents" placeholder="ticket.open, ticket.assigned, ticket.resolved" value="*">
+      <div class="hint">支持：ticket.open, ticket.assigned, ticket.confirmed, ticket.resolved, ticket.closed。* 表示所有事件</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px">
+          <label>重试次数</label>
+          <input type="number" id="whRetry" value="3" min="0" max="10" style="width:100%">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <label>超时（秒）</label>
+          <input type="number" id="whTimeout" value="10" min="1" max="60" style="width:100%">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="save-btn" onclick="saveWebhook()">💾 保存 Webhook</button>
+        <button onclick="cancelWebhookEdit()" style="display:none;background:#888;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px" id="whCancelBtn">取消</button>
+        <span id="whStatus" style="font-size:12px;color:#43a047;margin-left:12px;display:none">✅ 已保存</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span>Webhooks 列表</span></div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="webhookTable"><tr><td colspan="8" class="status-text">加载中...</td></tr></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span>📋 发送日志（最近100条）</span></div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="webhookLogTable"><tr><td colspan="7" class="status-text">加载中...</td></tr></table>
+    </div>
+  </div>
+
+  <!-- ===== IM 适配器管理 ===== -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-header" style="background:#f3e5f5">
+      <span>📱 IM 适配器管理（企微/钉钉/飞书）</span>
+      <button onclick="showAddIMAdapter()" style="background:#7b1fa2;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 新增适配器</button>
+    </div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="imAdapterTable"><tr><td colspan="7" class="status-text">加载中...</td></tr></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="background:#f3e5f5">
+      <span>📨 推送通知（手动触发）</span>
+    </div>
+    <div class="card-body config-form">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+        <div style="flex:1;min-width:160px">
+          <label>选择适配器</label>
+          <select id="imNotifyAdapter" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px"><option value="">请先加载适配器</option></select>
+        </div>
+        <div style="flex:1;min-width:160px">
+          <label>平台用户ID</label>
+          <input type="text" id="imNotifyUserId" placeholder="企业微信/钉钉用户ID">
+        </div>
+      </div>
+      <label>通知内容</label>
+      <textarea id="imNotifyContent" rows="3" placeholder="请输入通知内容..." style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;resize:vertical;font-family:inherit"></textarea>
+      <div style="margin-top:8px">
+        <button onclick="sendIMNotification()" style="background:#7b1fa2;color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px">📤 发送通知</button>
+        <span id="imNotifyStatus" style="font-size:12px;color:#43a047;margin-left:12px;display:none">✅ 已发送</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="background:#f3e5f5">
+      <span>📋 用户映射关系</span>
+      <div style="font-size:11px;color:#888;font-weight:400">将平台用户绑定到 SmartCS 客户/客服</div>
+    </div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="imMappingTable"><tr><td colspan="6" class="status-text">请先选择适配器</td></tr></table>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;gap:8px">
+        <select id="imMappingAdapter" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px" onchange="loadIMMappings()"><option value="">选择适配器...</option></select>
+        <button onclick="showAddIMMapping()" style="background:#7b1fa2;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 绑定用户</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="background:#f3e5f5">
+      <span>📊 消息记录</span>
+    </div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="imMessageTable"><tr><td colspan="6" class="status-text">加载中...</td></tr></table>
+    </div>
+  </div>
+
+  <!-- ===== 外部服务适配器管理 ===== -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-header" style="background:#e8f5e9">
+      <span>🔧 外部服务适配器（Jira / 禅道 / GitHub Issues）</span>
+      <button onclick="showAddExtAdapter()" style="background:#2e7d32;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 新增适配器</button>
+    </div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="extAdapterTable"><tr><td colspan="7" class="status-text">加载中...</td></tr></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="background:#e8f5e9">
+      <span>🔗 工单-外部系统关联管理</span>
+      <div style="font-size:11px;color:#888;font-weight:400">查看/管理外部缺陷链接</div>
+    </div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="extLinkTable"><tr><td colspan="6" class="status-text">加载中...</td></tr></table>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="text" id="extLinkTicketId" placeholder="工单ID" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;flex:1;min-width:120px">
+        <input type="text" id="extLinkExternalId" placeholder="外部ID" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;flex:1;min-width:120px">
+        <input type="text" id="extLinkExternalUrl" placeholder="外部URL（选填）" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;flex:1;min-width:120px">
+        <button onclick="addExtLink()" style="background:#2e7d32;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 添加关联</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 添加升级记录弹窗 -->
+<div class="modal-overlay" id="addUpgradeModal">
+  <div class="modal" style="width:500px">
+    <h2>添加升级记录</h2>
+    <input id="upgradeVersion" placeholder="版本号（如 v3.0.0）">
+    <input type="date" id="upgradeDate" style="margin-bottom:10px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:100%">
+    <textarea id="upgradeContent" rows="6" placeholder="升级内容（每行一条）\n例如：\n- 新增用户图片上传功能\n- 修复客服工作台Bug\n- 优化AI响应速度" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;resize:vertical;font-family:inherit"></textarea>
+    <div class="btn-bar">
+      <button class="btn-cancel" onclick="document.getElementById('addUpgradeModal').classList.remove('show')">取消</button>
+      <button class="btn-primary" onclick="addUpgrade()">确定添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 工单详情窗 -->
+<div class="modal-overlay" id="ticketModal"><div class="modal" id="ticketModalContent"></div></div>
+
+<!-- 编辑客户弹窗 -->
+<div class="modal-overlay" id="editUserModal">
+  <div class="modal" style="width:420px">
+    <h2>📝 编辑客户信息</h2>
+    <input id="editUserName" placeholder="姓名">
+    <input id="editUserEmpId" placeholder="工号">
+    <input id="editUserPhone" placeholder="电话">
+    <input id="editUserCompany" placeholder="公司">
+    <input id="editUserDept" placeholder="部门">
+    <textarea id="editUserNotes" rows="3" placeholder="备注" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;resize:vertical;font-family:inherit;margin:8px 0"></textarea>
+    <div class="btn-bar">
+      <button class="btn-cancel" onclick="document.getElementById('editUserModal').classList.remove('show')">取消</button>
+      <button class="btn-primary" onclick="saveEditUser()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 备注编辑窗 -->
+<div class="modal-overlay" id="remarkModal">
+  <div class="modal" style="width:420px">
+    <h2>✏️ 编辑工单备注</h2>
+    <textarea id="remarkInput" rows="4" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;resize:vertical;font-family:inherit;margin:8px 0" placeholder="请输入备注内容..."></textarea>
+    <div class="btn-bar">
+      <button class="btn-cancel" onclick="document.getElementById('remarkModal').classList.remove('show')">取消</button>
+      <button class="btn-primary" onclick="saveRemark()">保存备注</button>
+    </div>
+  </div>
+</div>
+
+<!-- 客户详情窗 -->
+<div class="modal-overlay" id="userModal"><div class="modal" id="userModalContent"></div></div>
+
+<!-- 外部适配器编辑窗 -->
+<div class="modal-overlay" id="extAdapterModal">
+  <div class="modal" style="width:600px">
+    <h2 id="extAdapterModalTitle">新增外部服务适配器</h2>
+    <div class="row">
+      <div class="field">
+        <label>名称 <span style="color:#e53935">*</span></label>
+        <input type="text" id="extAdapterFormName" placeholder="例如：生产环境 Jira">
+      </div>
+      <div class="field">
+        <label>适配器类型</label>
+        <select id="extAdapterFormType" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px">
+          <option value="defect">🐛 缺陷系统</option>
+          <option value="order_query">📦 订单查询</option>
+          <option value="knowledge">📚 知识库</option>
+          <option value="custom">🔌 自定义</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>平台 <span style="color:#e53935">*</span></label>
+        <select id="extAdapterFormPlatform" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px" onchange="updateExtConfigTemplate()">
+          <option value="jira">📌 Jira / JSM</option>
+          <option value="zentao">🐉 禅道</option>
+          <option value="github">🐙 GitHub Issues</option>
+          <option value="gitlab">🦊 GitLab Issues</option>
+          <option value="custom">🔌 自定义</option>
+        </select>
+      </div>
+    </div>
+    <label>配置（JSON 格式）<span style="color:#e53935">*</span></label>
+    <div style="font-size:11px;color:#888;margin-bottom:4px" id="extConfigHint">Jira: {"url":"https://jira.example.com","api_token":"xxx","project_key":"PROJ"}</div>
+    <textarea id="extAdapterFormConfig" rows="6" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;outline:none;resize:vertical;font-family:monospace">{"url":"","api_token":"","project_key":""}</textarea>
+    <div class="btn-bar">
+      <button class="btn-cancel" onclick="document.getElementById('extAdapterModal').classList.remove('show')">取消</button>
+      <button class="btn-primary" onclick="saveExtAdapter()" style="background:#2e7d32">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- IM 适配器编辑窗 -->
+<div class="modal-overlay" id="imAdapterModal">
+  <div class="modal" style="width:600px">
+    <h2 id="imAdapterModalTitle">新增适配器</h2>
+    <div class="row">
+      <div class="field">
+        <label>名称 <span style="color:#e53935">*</span></label>
+        <input type="text" id="imAdapterFormName" placeholder="例如：企业微信生产环境">
+      </div>
+      <div class="field">
+        <label>平台 <span style="color:#e53935">*</span></label>
+        <select id="imAdapterFormPlatform" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px">
+          <option value="wecom">💬 企业微信</option>
+          <option value="dingtalk">📎 钉钉</option>
+          <option value="feishu">📄 飞书</option>
+        </select>
+      </div>
+    </div>
+    <label>配置（JSON 格式）<span style="color:#e53935">*</span></label>
+    <div style="font-size:11px;color:#888;margin-bottom:4px">企微: {"corpid":"xx","agentid":"xx","corpsecret":"xx"} | 钉钉: {"appkey":"xx","appsecret":"xx"}</div>
+    <textarea id="imAdapterFormConfig" rows="5" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;outline:none;resize:vertical;font-family:monospace">{"corpid":"","agentid":"","corpsecret":""}</textarea>
+    <label>回调 URL（可选）</label>
+    <input type="text" id="imAdapterFormCallback" placeholder="https://your-domain.com/api/im/callback/...">
+    <div class="row">
+      <div class="field">
+        <label>Token（回调验证）</label>
+        <input type="text" id="imAdapterFormToken" placeholder="回调验证 Token">
+      </div>
+      <div class="field">
+        <label>EncodingAESKey</label>
+        <input type="text" id="imAdapterFormAesKey" placeholder="消息加解密 Key">
+      </div>
+    </div>
+    <div class="btn-bar">
+      <button class="btn-cancel" onclick="document.getElementById('imAdapterModal').classList.remove('show')">取消</button>
+      <button class="btn-primary" onclick="saveIMAdapter()" style="background:#7b1fa2">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 认证管理 ====== -->
+<div class="content" id="pageAuth">
+  <div class="card">
+    <div class="card-header"><span>🔐 认证提供者列表</span>
+      <button onclick="showAddAuthProvider()" style="background:#1565c0;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">+ 新增提供者</button>
+    </div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="authProviderTable"><tr><td colspan="7" class="status-text">加载中...</td></tr></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span>🔗 身份映射</span></div>
+    <div class="card-body">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <select id="authMappingProvider" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px" onchange="loadAuthMappings()">
+          <option value="">全部提供者</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="authMappingTable"><tr><td colspan="6" class="status-text">加载中...</td></tr></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 认证提供者编辑弹窗 -->
+<div class="modal-overlay" id="authProviderModal">
+  <div class="modal" style="width:520px;max-height:80vh;overflow-y:auto">
+    <h2 id="authProviderModalTitle">新增认证提供者</h2>
+    <div style="display:none" id="authProviderEditId"></div>
+    <label>名称</label>
+    <input type="text" id="authProviderName" placeholder="例如：公司AD域">
+    <label>认证类型</label>
+    <select id="authProviderType" style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;font-family:inherit;margin-bottom:14px" onchange="renderAuthProviderConfigFields()">
+      <option value="ldap">LDAP / AD</option>
+      <option value="oidc">OIDC / SSO</option>
+    </select>
+    <div id="authProviderConfigFields"></div>
+    <label>
+      <input type="checkbox" id="authProviderEnabled" checked>
+      启用此提供者
+    </label>
+    <div class="btn-bar" style="margin-top:12px">
+      <button class="btn-cancel" onclick="document.getElementById('authProviderModal').classList.remove('show')">取消</button>
+      <button class="btn-primary" onclick="saveAuthProvider()" style="background:#1565c0">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 添加客服窗 -->
+<div class="modal-overlay" id="addAgentModal">
+  <div class="modal" style="width:400px">
+    <h2>添加客服人员</h2>
+    <input id="newAgentName" placeholder="姓名">
+    <input id="newAgentEmail" placeholder="邮箱" type="email">
+    <input id="newAgentPassword" placeholder="密码" type="password">
+    <input id="newAgentEmpId" placeholder="工号（选填）">
+    <input id="newAgentPhone" placeholder="电话（选填）">
+    <select id="newAgentLevel" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;font-family:inherit;margin:8px 0">
+    <option value="1">一线客服</option>
+    <option value="2">二线工程师</option>
+    <option value="3">三线专家</option>
+  </select>
+  <input id="newAgentCompany" placeholder="公司（选填）">
+    <input id="newAgentDept" placeholder="部门（选填）">
+    <input id="newAgentTitle" placeholder="职称（选填）">
+    <div class="btn-bar">
+      <button class="btn-cancel" onclick="document.getElementById('addAgentModal').classList.remove('show')">取消</button>
+      <button class="btn-primary" onclick="addAgent()">确定添加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var currentPage = 'tickets';
+
+function switchPage(page, el) {
+  currentPage = page;
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+  el.classList.add('active');
+  document.querySelectorAll('.content').forEach(function(c){c.classList.remove('active')});
+  document.querySelectorAll('.admin-section').forEach(function(c){c.style.display = 'none'});
+  var pageEl = document.getElementById('page' + page.charAt(0).toUpperCase() + page.slice(1));
+  if (pageEl) pageEl.classList.add('active');
+  if (page === 'tickets') loadTickets();
+  if (page === 'users') loadUsers();
+  if (page === 'agents') loadAgents();
+  if (page === 'config') loadConfig();
+  if (page === 'reasons') loadCloseReasons();
+  if (page === 'upgrades') loadUpgrades();
+  if (page === 'systems') loadSystems();
+  if (page === 'webhooks') loadWebhooks();
+  if (page === 'auth') { loadAuthProviders(); loadAuthMappingFilter(); }
+  if (page === 'audit') { document.getElementById('section-audit').style.display = 'block'; loadAuditLogs(); }
+}
+
+function logout() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/agent/logout', true);
+  xhr.onload = function(){ window.location.href = '/agent/login'; };
+  xhr.send();
+}
+
+// ===== 系统升级记录 =====
+function loadUpgrades() {
+  var page = document.getElementById('upgradePagination').dataset.page || 1;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/upgrades?page=' + page, true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      renderUpgradeTable(d.upgrades, d.page, d.pages);
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function renderUpgradeTable(upgrades, page, pages) {
+  if (!upgrades || upgrades.length === 0) {
+    document.getElementById('upgradeTable').innerHTML = '<tr><th>版本号</th><th>发布日期</th><th>升级内容</th><th>记录时间</th><th>操作</th></tr><tr><td colspan="5" class="status-text">暂无升级记录</td></tr>';
+    document.getElementById('upgradePagination').innerHTML = '';
+    return;
+  }
+  var html = '<tr><th>版本号</th><th>发布日期</th><th>升级内容</th><th>记录时间</th><th>操作</th></tr>';
+  for (var i = 0; i < upgrades.length; i++) {
+    var u = upgrades[i];
+    var contentHtml = (u.content || '').replace(/\n/g,'<br>').replace(/- /g,'&nbsp;&nbsp;• ');
+    html += '<tr>' +
+      '<td style="font-family:monospace;font-weight:600;font-size:13px">'+u.version+'</td>' +
+      '<td style="font-size:12px;color:#888">'+u.release_date+'</td>' +
+      '<td style="font-size:12px;max-width:300px">'+contentHtml+'</td>' +
+      '<td style="font-size:11px;color:#999">'+u.created_at+'</td>' +
+      '<td><button onclick="deleteUpgrade(\''+u.id+'\')" style="background:#ff5252;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px">删除</button></td></tr>';
+  }
+  document.getElementById('upgradeTable').innerHTML = html;
+  var pp = '';
+  for (var p = 1; p <= pages; p++) {
+    pp += '<button class="'+(p==page?'active':'')+'" onclick="gotoUpgradePage('+p+')">'+p+'</button>';
+  }
+  document.getElementById('upgradePagination').dataset.page = page;
+  document.getElementById('upgradePagination').innerHTML = pp;
+}
+
+function gotoUpgradePage(p) {
+  document.getElementById('upgradePagination').dataset.page = p;
+  loadUpgrades();
+}
+
+// ===== 负责系统管理 =====
+function loadSystems() {
+  var tbody = document.getElementById('systemTable');
+  var assignDiv = document.getElementById('agentSystemAssign');
+  tbody.innerHTML = '<tr><td colspan="4" class="status-text">加载中...</td></tr>';
+  assignDiv.innerHTML = '';
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/systems', true);
+  xhr.onload = function() {
+    try {
+      var systems = JSON.parse(xhr.responseText);
+      renderSystems(systems);
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="4" class="status-text">加载失败</td></tr>'; }
+  };
+  xhr.send();
+  // Also load agents for assignment UI
+  var ahr = new XMLHttpRequest();
+  ahr.open('GET', '/api/admin/agents', true);
+  ahr.onload = function() {
+    try {
+      var agents = JSON.parse(ahr.responseText);
+      renderAgentAssign(agents);
+    } catch(e) {}
+  };
+  ahr.send();
+}
+
+function renderSystems(systems) {
+  var tbody = document.getElementById('systemTable');
+  if (!systems || systems.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="status-text">暂无系统，点击右上角添加</td></tr>';
+    return;
+  }
+  var html = '<tr><th>系统名称</th><th>描述</th><th>负责客服</th><th>操作</th></tr>';
+  systems.forEach(function(s) {
+    html += '<tr>' +
+      '<td><span class="badge bg-assigned" style="background:#1a73e8">' + s.name.replace(/</g,'&lt;') + '</span></td>' +
+      '<td>' + (s.description || '-') + '</td>' +
+      '<td id="sysAgents_' + s.id + '">加载中...</td>' +
+      '<td><button class="sys-edit-btn" data-id="' + s.id + '" data-name="' + s.name.replace(/'/g,"\'") + '" data-desc="' + (s.description||'').replace(/'/g,"\'") + '" style="background:none;border:none;color:#1a73e8;cursor:pointer;font-size:12px;margin-right:8px">✏️ 编辑</button>' +
+      '<button class="sys-delete-btn" data-id="' + s.id + '" style="background:none;border:none;color:#e53935;cursor:pointer;font-size:12px">🗑️ 删除</button></td></tr>';
+  });
+  tbody.innerHTML = html;
+  // Load agent names for each system
+  systems.forEach(function(s) {
+    loadSysAgents(s.id);
+  });
+}
+
+function loadSysAgents(sysId) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/agents', true);
+  xhr.onload = function() {
+    try {
+      var agents = JSON.parse(xhr.responseText);
+      var assigned = agents.filter(function(a) { return a.systems && a.systems.indexOf(sysNameById(sysId)) >= 0; });
+      var el = document.getElementById('sysAgents_' + sysId);
+      if (el) el.textContent = assigned.length > 0 ? assigned.map(function(a){return a.display_name||a.name}).join(', ') : '-';
+    } catch(e) {}
+  };
+  xhr.send();
+}
+
+var systemsNameCache = {};
+function sysNameById(id) {
+  return systemsNameCache[id] || '';
+}
+
+function renderAgentAssign(agents) {
+  var div = document.getElementById('agentSystemAssign');
+  // Filter out admin
+  var csAgents = agents.filter(function(a){return a.role !== 'admin';});
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/systems', true);
+  xhr.onload = function() {
+    try {
+      var systems = JSON.parse(xhr.responseText);
+      systems.forEach(function(s){ systemsNameCache[s.id] = s.name; });
+      var html = '<div style="overflow-x:auto"><table><tr><th>客服</th>';
+      systems.forEach(function(s) { html += '<th style="text-align:center;font-size:11px">' + s.name + '</th>'; });
+      html += '</tr>';
+      csAgents.forEach(function(a) {
+        html += '<tr><td><b>' + (a.display_name||a.name) + '</b></td>';
+        systems.forEach(function(s) {
+          var checked = (a.systems || []).indexOf(s.name) >= 0;
+          html += '<td style="text-align:center"><input type="checkbox" data-agent="' + a.id + '" data-system="' + s.id + '" ' + (checked ? 'checked' : '') + '" style="accent-color:#1a73e8"></td>';
+        });
+        html += '</tr>';
+      });
+      html += '</table></div>';
+      div.innerHTML = html;
+    } catch(e) { div.innerHTML = '<span class="status-text">加载失败</span>'; }
+  };
+  xhr.send();
+}
+
+function toggleAgentSystem(cb, agentId, systemId) {
+  // Get all checkboxes for this agent and collect checked system IDs
+  var checks = document.querySelectorAll('input[data-agent="' + agentId + '"]:checked');
+  var sysIds = [];
+  checks.forEach(function(c) { sysIds.push(c.getAttribute('data-system')); });
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/agents/' + agentId + '/systems', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    // Reload agent names in system table
+    loadSystems();
+  };
+  xhr.send(JSON.stringify({system_ids: sysIds}));
+}
+
+function showAddSystem() {
+  var name = prompt('请输入系统名称：');
+  if (!name) return;
+  var desc = prompt('请输入系统描述（选填）：');
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/systems', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) loadSystems();
+      else alert('添加失败：' + (d.error || '未知错误'));
+    } catch(e) { alert('添加失败'); }
+  };
+  xhr.onerror = function() { alert('网络错误'); };
+  xhr.send(JSON.stringify({name: name, description: desc || ''}));
+}
+
+function editSystem(id, name, desc) {
+  var newName = prompt('修改系统名称：', name);
+  if (!newName) return;
+  var newDesc = prompt('修改系统描述：', desc);
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', '/api/admin/systems/' + id, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try { var d = JSON.parse(xhr.responseText); if (d.ok) loadSystems(); else alert('更新失败'); }
+    catch(e) { alert('更新失败'); }
+  };
+  xhr.send(JSON.stringify({name: newName, description: newDesc || ''}));
+}
+
+function deleteSystem(id) {
+  if (!confirm('确定删除该系统？相关的分配关系也会被清除。')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/systems/' + id, true);
+  xhr.onload = function() {
+    try { var d = JSON.parse(xhr.responseText); if (d.ok) loadSystems(); else alert('删除失败'); }
+    catch(e) { alert('删除失败'); }
+  };
+  xhr.send();
+}
+
+// Wait for DOM ready before attaching event listeners
+(function() {
+  function initSystemsEvents() {
+    var sysTable = document.getElementById('systemTable');
+    if (sysTable) {
+      sysTable.addEventListener('click', function(e) {
+        var btn = e.target.closest('.sys-edit-btn');
+        if (btn) {
+          editSystem(btn.getAttribute('data-id'), btn.getAttribute('data-name'), btn.getAttribute('data-desc'));
+          return;
+        }
+        btn = e.target.closest('.sys-delete-btn');
+        if (btn) {
+          deleteSystem(btn.getAttribute('data-id'));
+          return;
+        }
+      });
+    }
+    var assignDiv = document.getElementById('agentSystemAssign');
+    if (assignDiv) {
+      assignDiv.addEventListener('change', function(e) {
+        var cb = e.target.closest('.sys-agent-cb');
+        if (cb) {
+          var agentId = cb.getAttribute('data-agent');
+          var checks = document.querySelectorAll('input[data-agent="' + agentId + '"]:checked');
+          var sysIds = [];
+          checks.forEach(function(c) { sysIds.push(c.getAttribute('data-system')); });
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/admin/agents/' + agentId + '/systems', true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.onload = function() { loadSystems(); };
+          xhr.send(JSON.stringify({system_ids: sysIds}));
+        }
+      });
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSystemsEvents);
+  } else {
+    initSystemsEvents();
+  }
+})();
+
+function showAddUpgrade() {
+  document.getElementById('upgradeVersion').value = '';
+  document.getElementById('upgradeDate').value = '';
+  document.getElementById('upgradeContent').value = '';
+  document.getElementById('addUpgradeModal').classList.add('show');
+}
+
+function addUpgrade() {
+  var version = document.getElementById('upgradeVersion').value.trim();
+  var date = document.getElementById('upgradeDate').value;
+  var content = document.getElementById('upgradeContent').value.trim();
+  if (!version) { alert('请输入版本号'); return; }
+  if (!date) { alert('请选择发布日期'); return; }
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/upgrades', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    document.getElementById('addUpgradeModal').classList.remove('show');
+    loadUpgrades();
+  };
+  xhr.send(JSON.stringify({version: version, release_date: date, content: content}));
+}
+
+function deleteUpgrade(uid) {
+  if (!confirm('确定删除此升级记录？')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/upgrades/' + uid, true);
+  xhr.onload = function() { loadUpgrades(); };
+  xhr.send();
+}
+
+// ===== 工单管理 =====
+function loadTickets() {
+  var page = document.getElementById('ticketPagination').dataset.page || 1;
+  var status = document.getElementById('ticketStatusFilter').value;
+  var search = document.getElementById('ticketSearch').value;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/tickets?page=' + page + '&status=' + status + '&search=' + encodeURIComponent(search), true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      renderTicketStats(d.stats);
+      renderTicketTable(d.tickets, d.page, d.pages);
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function renderTicketStats(s) {
+  document.getElementById('openCount').textContent = s.open;
+  document.getElementById('ticketStats').innerHTML = 
+    '<div class="stat-card"><div class="num">'+s.open+'</div><div class="label">待处理</div></div>' +
+    '<div class="stat-card"><div class="num">'+s.assigned+'</div><div class="label">处理中</div></div>' +
+    '<div class="stat-card"><div class="num">'+s.closed+'</div><div class="label">已关闭</div></div>' +
+    '<div class="stat-card"><div class="num">'+s.resolved+'</div><div class="label">已解决</div></div>' +
+    '<div class="stat-card"><div class="num">'+s.total+'</div><div class="label">总计</div></div>';
+}
+
+function renderTicketTable(tickets, page, pages) {
+  var statusMap = {open:'待处理',assigned:'处理中',confirmed:'待确认',closed:'已关闭',resolved:'已解决'};
+  var bgMap = {open:'bg-open',assigned:'bg-assigned',confirmed:'bg-confirmed',closed:'bg-closed',resolved:'bg-resolved'};
+  if (!tickets || tickets.length === 0) {
+    document.getElementById('ticketTable').innerHTML = '<tr><td colspan="9" class="status-text">暂无工单</td></tr>';
+    document.getElementById('ticketPagination').innerHTML = '';
+    return;
+  }
+  var html = '<tr><th>工单号</th><th>客户</th><th>问题描述</th><th>状态</th><th>关闭原因</th><th>客服</th><th>评分</th><th>时间</th><th>操作</th></tr>';
+  for (var i = 0; i < tickets.length; i++) {
+    var t = tickets[i];
+    var tkNo = t.ticket_number || ('#' + t.id.substring(0,8));
+    var stars = '';
+    if (t.customer_rating > 0) {
+      for (var s = 0; s < t.customer_rating; s++) stars += '★';
+      for (s = t.customer_rating; s < 5; s++) stars += '☆';
+    } else { stars = '-'; }
+    html += '<tr class="cursor-pointer" onclick="showTicketDetail(\''+t.id+'\')">' +
+      '<td style="font-family:monospace;font-size:11px">'+tkNo+'</td>' +
+      '<td>'+(t.customer_name||'游客')+'</td>' +
+      '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(t.issue_description||'-').substring(0,40)+'</td>' +
+      '<td><span class="badge '+bgMap[t.status]+'">'+statusMap[t.status]+'</span></td>' +
+      '<td style="font-size:11px;color:#888">'+(t.close_reason||'-')+'</td>' +
+      '<td>'+(t.agent_display||t.agent_name||'-')+'</td>' +
+      '<td class="stars">'+stars+'</td>' +
+      '<td style="font-size:11px;color:#999">'+t.created_at.substring(5,16)+'</td>' +
+      '<td><button onclick="event.stopPropagation();showTicketDetail(\''+t.id+'\')" style="background:#1a73e8;color:#fff;border:none;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px">详情</button></td></tr>';
+  }
+  document.getElementById('ticketTable').innerHTML = html;
+  var pp = '';
+  for (var p = 1; p <= pages; p++) {
+    pp += '<button class="'+(p==page?'active':'')+'" onclick="gotoTicketPage('+p+')">'+p+'</button>';
+  }
+  document.getElementById('ticketPagination').dataset.page = page;
+  document.getElementById('ticketPagination').innerHTML = pp;
+}
+
+function gotoTicketPage(p) {
+  document.getElementById('ticketPagination').dataset.page = p;
+  loadTickets();
+}
+
+function showTicketDetail(tkId) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/tickets/'+tkId, true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      var t = d.ticket; var msgs = d.messages;
+      var statusMap = {open:'待处理',assigned:'处理中',confirmed:'待确认',closed:'已关闭',resolved:'已解决'};
+      var stars = '';
+      for (var s = 0; s < t.customer_rating; s++) stars += '★';
+      for (s = t.customer_rating; s < 5; s++) stars += '☆';
+      if (!t.customer_rating) stars = '未评价';
+      var tkNo = t.ticket_number || ('#'+t.id.substring(0,10));
+      var msgHtml = '';
+      var labels = {user:'用户',bot:'AI',agent:'客服',system:'系统'};
+      for (var i = 0; i < msgs.length; i++) {
+        var m = msgs[i];
+        var msgContent = '';
+        if (m.image_url) {
+          msgContent = '<br><img src="'+m.image_url+'" style="max-width:220px;border-radius:8px;cursor:pointer;margin-top:4px" onclick="window.open(\''+m.image_url+'\')">';
+        } else {
+          msgContent = ' ' + m.content.replace(/</g,'&lt;');
+        }
+        msgHtml += '<div style="margin-bottom:6px;padding:6px 10px;background:#f8f9fa;border-radius:6px;font-size:12px">' +
+          '<span style="color:#888">['+labels[m.role]+' '+m.created_at.substring(11,16)+']</span>' +
+          msgContent + '</div>';
+      }
+      if (!msgs.length) msgHtml = '<div style="color:#999;font-size:12px">暂无对话记录</div>';
+      var remarkSection = '';
+      if (t.admin_remarks) {
+        remarkSection = '<div class="detail-section"><h3>📝 备注标记</h3>' +
+          '<div class="ticket-row-info" style="background:#fff8e1;padding:8px 10px;border-radius:6px">' +
+          (t.admin_remarks || '暂无') + '</div></div>';
+      }
+      document.getElementById('ticketModalContent').innerHTML =
+        '<h2>📋 工单详情 ' + tkNo + '</h2>' +
+        '<div class="detail-section"><h3>基本信息</h3>' +
+        '<div class="ticket-row-info">' +
+        '<b>客户：</b>'+ (t.customer_name||'游客') +' | <b>电话：</b>'+ (t.cp_phone||'-') +' | <b>公司：</b>'+ (t.company||'-') +'<br>' +
+        '<b>状态：</b><span class="badge bg-'+t.status+'">'+statusMap[t.status]+'</span>' +
+        ' | <b>优先级：</b>'+ t.priority +
+        ' | <b>问题描述：</b>'+ (t.issue_description||'-') +'<br>' +
+        (t.ticket_number ? '<b>工单编号：</b>'+t.ticket_number+'<br>' : '') +
+        (t.image_url ? '<b>附件：</b><a href="'+t.image_url+'" target="_blank">查看图片</a> | ' : '') +
+        '<b>创建时间：</b>'+ t.created_at +'<br>' +
+        '<b>分配时间：</b>'+ (t.assigned_at||'-') +' | <b>关闭时间：</b>'+ (t.closed_at||'-') +'</div></div>' +
+        '<div class="detail-section"><h3>客服信息</h3>' +
+        '<div class="ticket-row-info"><b>客服：</b>'+ (t.agent_display||t.agent_name||'未分配')+
+        ' | <b>部门：</b>'+ (t.department||'-') +' | <b>邮箱：</b>'+ (t.agent_email||'-') +'</div></div>' +
+        '<div class="detail-section"><h3>处理结果</h3>' +
+        '<div class="ticket-row-info">' +
+        (t.close_reason ? '<b>关闭原因：</b>'+t.close_reason+'<br>' : '') +
+        '<b>解决备注：</b>'+ (t.resolution_notes||'-') +'<br>' +
+        '<b>客户评价：</b><span class="stars">'+stars+'</span>' +
+        (t.customer_feedback ? ' | <b>反馈：</b>'+t.customer_feedback : '')+'</div></div>' +
+        remarkSection +
+        '<div class="detail-section"><h3>对话记录</h3>'+msgHtml+'</div>' +
+        '<div class="btn-bar">' +
+        '<button class="btn-cancel" onclick="showRemarkDialog(\''+tkId+'\',\''+encodeURIComponent(t.admin_remarks||'')+'\')">📝 备注</button>' +
+        '<button class="btn-cancel" onclick="document.getElementById(\'ticketModal\').classList.remove(\'show\')">关闭</button>' +
+        '<button class="btn-danger" onclick="deleteTicket(\''+tkId+'\')">✖ 删除</button>' +
+        '</div>';
+      document.getElementById('ticketModal').classList.add('show');
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+document.getElementById('ticketModal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('show');
+});
+
+// ===== 用户管理 =====
+function loadUsers() {
+  var page = document.getElementById('userPagination').dataset.page || 1;
+  var search = document.getElementById('userSearch').value;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/customers?page='+page+'&search='+encodeURIComponent(search), true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (!d.customers || d.customers.length === 0) {
+        document.getElementById('userTable').innerHTML = '<tr><td colspan="8" class="status-text">暂无客户</td></tr>';
+        document.getElementById('userPagination').innerHTML = '';
+        return;
+      }
+      var html = '<tr><th>ID</th><th>姓名</th><th>工号</th><th>电话</th><th>公司</th><th>部门</th><th>工单数</th><th>注册时间</th></tr>';
+      for (var i = 0; i < d.customers.length; i++) {
+        var u = d.customers[i];
+        html += '<tr class="cursor-pointer" onclick="showUserDetail(\''+u.id+'\')">' +
+          '<td style="font-family:monospace;font-size:11px">'+u.id.substring(0,10)+'</td>' +
+          '<td>'+(u.pname||u.name||'游客')+'</td>' +
+          '<td>'+(u.employee_id||'-')+'</td>' +
+          '<td>'+(u.phone||'-')+'</td>' +
+          '<td>'+(u.company||'-')+'</td>' +
+          '<td>'+(u.department||'-')+'</td>' +
+          '<td>'+u.ticket_count+'</td>' +
+          '<td style="font-size:11px;color:#999">'+u.created_at+'</td></tr>';
+      }
+      document.getElementById('userTable').innerHTML = html;
+      var pp = '';
+      for (var p = 1; p <= d.pages; p++) {
+        pp += '<button class="'+(p==d.page?'active':'')+'" onclick="gotoUserPage('+p+')">'+p+'</button>';
+      }
+      document.getElementById('userPagination').dataset.page = d.page;
+      document.getElementById('userPagination').innerHTML = pp;
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function gotoUserPage(p) {
+  document.getElementById('userPagination').dataset.page = p;
+  loadUsers();
+}
+
+function showUserDetail(cid) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/customers/'+cid, true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      var c = d.customer; var tickets = d.tickets;
+      var statusMap = {open:'待处理',assigned:'处理中',confirmed:'待确认',closed:'已关闭',resolved:'已解决'};
+      var ticketHtml = '';
+      for (var i = 0; i < tickets.length; i++) {
+        var t = tickets[i];
+        var tkNo = t.ticket_number || ('#'+t.id.substring(0,8));
+        ticketHtml += '<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px">' +
+          tkNo+' <span class="badge bg-'+t.status+'">'+statusMap[t.status]+'</span> ' +
+          (t.agent_display||'-')+' '+(t.customer_rating?'★'.repeat(t.customer_rating):'')+
+          ' <span style="color:#999;float:right">'+t.created_at.substring(5,16)+'</span></div>';
+      }
+      document.getElementById('userModalContent').innerHTML =
+        '<h2>👤 客户详情</h2>' +
+        '<div class="detail-section"><h3>基本信息</h3><div class="ticket-row-info">' +
+        '<b>客户ID：</b>'+c.id+'<br><b>姓名：</b>'+(c.pname||c.name||'游客')+
+        '<br><b>工号：</b>'+(c.employee_id||'-')+
+        '<br><b>电话：</b>'+(c.phone||'-')+'<br><b>公司：</b>'+(c.company||'-')+
+        '<br><b>部门：</b>'+(c.department||'-')+
+        '<br><b>备注：</b>'+(c.notes||'-')+'<br><b>注册时间：</b>'+c.created_at+'</div></div>' +
+        '<div class="detail-section"><h3>历史工单 ('+tickets.length+')</h3>'+ticketHtml+'</div>' +
+        '<div class="btn-bar">' +
+        '<button class="btn-cancel" onclick="showEditUser(\''+cid+'\',\''+encodeURIComponent(c.pname||c.name||"")+'\',\''+encodeURIComponent(c.employee_id||"")+'\',\''+encodeURIComponent(c.phone||"")+'\',\''+encodeURIComponent(c.company||"")+'\',\''+encodeURIComponent(c.department||"")+'\',\''+encodeURIComponent(c.notes||"")+'\')">📝 编辑</button>' +
+        '<button class="btn-cancel" onclick="document.getElementById(\'userModal\').classList.remove(\'show\')">关闭</button></div>';
+      document.getElementById('userModal').classList.add('show');
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+document.getElementById('userModal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('show');
+});
+
+// ========== 工单备注与删除 ==========
+var currentRemarkId = '';
+
+function showRemarkDialog(tkId, remarks) {
+  currentRemarkId = tkId;
+  document.getElementById('remarkInput').value = decodeURIComponent(remarks);
+  document.getElementById('remarkModal').classList.add('show');
+}
+
+function saveRemark() {
+  if (!currentRemarkId) return;
+  var remark = document.getElementById('remarkInput').value.trim();
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', '/api/admin/tickets/' + currentRemarkId + '/remark', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    document.getElementById('remarkModal').classList.remove('show');
+    showTicketDetail(currentRemarkId);
+  };
+  xhr.send(JSON.stringify({remarks: remark}));
+}
+
+function deleteTicket(tkId) {
+  if (!confirm('⚠️ 确定要删除工单 ' + tkId + ' 吗？\n此操作不可恢复，将同时删除关联对话和消息！')) return;
+  if (!confirm('⚠️ 再次确认：删除后数据不可恢复，确定继续？')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/tickets/' + tkId, true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      document.getElementById('ticketModal').classList.remove('show');
+      loadTickets();
+    } else {
+      try { var d = JSON.parse(xhr.responseText); alert('删除失败：' + (d.error || '未知错误')); }
+      catch(e) { alert('删除失败'); }
+    }
+  };
+  xhr.send();
+}
+
+// ========== 客户编辑 ==========
+var currentEditUserId = '';
+
+function showEditUser(cid, name, empId, phone, company, dept, notes) {
+  currentEditUserId = cid;
+  document.getElementById('editUserName').value = decodeURIComponent(name);
+  document.getElementById('editUserEmpId').value = decodeURIComponent(empId);
+  document.getElementById('editUserPhone').value = decodeURIComponent(phone);
+  document.getElementById('editUserCompany').value = decodeURIComponent(company);
+  document.getElementById('editUserDept').value = decodeURIComponent(dept);
+  document.getElementById('editUserNotes').value = decodeURIComponent(notes);
+  document.getElementById('editUserModal').classList.add('show');
+}
+
+function saveEditUser() {
+  if (!currentEditUserId) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', '/api/admin/customers/' + currentEditUserId + '/profile', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    document.getElementById('editUserModal').classList.remove('show');
+    showUserDetail(currentEditUserId);
+    loadUsers();
+  };
+  xhr.send(JSON.stringify({
+    name: document.getElementById('editUserName').value.trim(),
+    employee_id: document.getElementById('editUserEmpId').value.trim(),
+    phone: document.getElementById('editUserPhone').value.trim(),
+    company: document.getElementById('editUserCompany').value.trim(),
+    department: document.getElementById('editUserDept').value.trim(),
+    notes: document.getElementById('editUserNotes').value.trim()
+  }));
+}
+
+// ===== 客服管理 =====
+function loadAgents() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/agents', true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (!d || d.length === 0) {
+        document.getElementById('agentTable').innerHTML = '<tr><td colspan="12" class="status-text">暂无客服</td></tr>';
+        return;
+      }
+            var html = '<tr><th>姓名</th><th>工号</th><th>邮箱</th><th>电话</th><th>部门</th><th>公司</th><th>职称</th><th>级别</th><th>负责系统</th><th>状态</th><th>活跃工单</th><th>操作</th></tr>';
+      for (var i = 0; i < d.length; i++) {
+        var a = d[i];
+        var statusDot = a.status==='online'?'🟢 在线':'⚪ 离线';
+        var levelLabel = a.agent_level >= 3 ? '🔴三线' : (a.agent_level === 2 ? '🔶二线' : '🔵一线');
+        var sysText = (a.systems && a.systems.length > 0) ? a.systems.join(', ') : '-';
+        html += '<tr>' +
+          '<td>'+(a.display_name||a.name)+'</td>' +
+          '<td style="font-size:12px">'+(a.employee_id||'-')+'</td>' +
+          '<td style="font-size:12px">'+a.email+'</td>' +
+          '<td>'+(a.agent_phone||'-')+'</td>' +
+          '<td>'+(a.department||'-')+'</td>' +
+          '<td>'+(a.company||'-')+'</td>' +
+          '<td>'+(a.title||'-')+'</td>' +
+          '<td>'+levelLabel+'</td>' +
+          '<td style="font-size:11px;color:#555">'+sysText+'</td>' +
+          '<td>'+statusDot+'</td>' +
+          '<td>'+a.active_tickets+'</td>' +
+          '<td>'+(a.role!=='admin'
+            ?'<button onclick="promoteAgent(\''+a.id+'\','+a.agent_level+')" style="background:#1565c0;color:#fff;border:none;padding:3px 6px;border-radius:5px;cursor:pointer;font-size:10px;margin-right:4px">升降级</button>'
+            +'<button onclick="deleteAgent(\''+a.id+'\')" style="background:#ff5252;color:#fff;border:none;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:11px">删除</button>'
+            :'<span style="font-size:11px;color:#888">管理员</span>')+'</td></tr>';}
+      document.getElementById('agentTable').innerHTML = html;
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function showAddAgent() {
+  document.getElementById('addAgentModal').classList.add('show');
+}
+
+function addAgent() {
+  var name = document.getElementById('newAgentName').value.trim();
+  var email = document.getElementById('newAgentEmail').value.trim();
+  var pwd = document.getElementById('newAgentPassword').value;
+  var empId = document.getElementById('newAgentEmpId').value.trim();
+  var phone = document.getElementById('newAgentPhone').value.trim();
+  var company = document.getElementById('newAgentCompany').value.trim();
+  var dept = document.getElementById('newAgentDept').value.trim();
+  var title = document.getElementById('newAgentTitle').value.trim();
+  if (!name || !email || !pwd) { alert('请填写姓名、邮箱和密码'); return; }
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/agents', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        document.getElementById('addAgentModal').classList.remove('show');
+        document.getElementById('newAgentName').value = '';
+        document.getElementById('newAgentEmail').value = '';
+        document.getElementById('newAgentPassword').value = '';
+        document.getElementById('newAgentEmpId').value = '';
+        document.getElementById('newAgentPhone').value = '';
+        document.getElementById('newAgentCompany').value = '';
+        document.getElementById('newAgentDept').value = '';
+        document.getElementById('newAgentTitle').value = '';
+        loadAgents();
+      } else { alert(d.error); }
+    } catch(e) { alert('添加失败'); }
+  };
+  var level = parseInt(document.getElementById('newAgentLevel').value) || 1;
+  xhr.send(JSON.stringify({name:name,email:email,password:pwd,employee_id:empId,phone:phone,company:company,department:dept,title:title,level:level}));
+}
+
+function deleteAgent(aid) {
+  if (!confirm('确定删除该客服？相关绑定关系也将移除！')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/agents/'+aid, true);
+  xhr.onload = function() { loadAgents(); };
+  xhr.send();
+}
+
+function promoteAgent(aid, currentLevel) {
+  var nextLevel = currentLevel >= 3 ? 1 : currentLevel + 1;
+  var labels = {1:'一线客服',2:'二线工程师',3:'三线专家'};
+  if (!confirm('将升级为 '+labels[nextLevel]+'？')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', '/api/admin/agents/'+aid+'/level', true);
+  xhr.setRequestHeader('Content-Type','application/json');
+  xhr.onload = function() { loadAgents(); };
+  xhr.send(JSON.stringify({level: nextLevel}));
+}
+
+// ===== 系统配置 =====
+function loadConfig() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/config', true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      document.getElementById('cfgApiBaseUrl').value = d.api_base_url || '';
+      document.getElementById('cfgApiKey').value = d.api_key || '';
+      document.getElementById('cfgModelName').value = d.model_name || '';
+      document.getElementById('cfgAdminPassword').value = d.admin_password || '';
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function saveConfig() {
+  var btn = document.getElementById('configSaveBtn');
+  btn.disabled = true; btn.textContent = '保存中...';
+  document.getElementById('configStatus').style.display = 'none';
+  var data = {
+    api_base_url: document.getElementById('cfgApiBaseUrl').value.trim(),
+    api_key: document.getElementById('cfgApiKey').value.trim(),
+    model_name: document.getElementById('cfgModelName').value.trim(),
+    admin_password: document.getElementById('cfgAdminPassword').value.trim()
+  };
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/config', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    btn.disabled = false; btn.textContent = '💾 保存配置';
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        document.getElementById('configStatus').style.display = 'inline';
+        document.getElementById('configStatus').textContent = '✅ 已保存（已生效）';
+      } else { alert('保存失败'); }
+    } catch(e) { alert('保存失败'); }
+  };
+  xhr.onerror = function() { btn.disabled = false; btn.textContent = '💾 保存配置'; alert('网络错误'); };
+  xhr.send(JSON.stringify(data));
+}
+
+// ===== 关闭原因管理 =====
+function loadCloseReasons() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/close-reasons', true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (!d || d.length === 0) {
+        document.getElementById('reasonsList').innerHTML = '<div style="padding:10px 0;color:#999;font-size:13px">暂无关闭原因，请添加</div>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < d.length; i++) {
+        var r = d[i];
+        html += '<div class="reason-row">' +
+          '<span class="order">#' + (i+1) + '</span>' +
+          '<span class="name">' + escapeHtml(r.name) + '</span>' +
+          '<button onclick="deleteCloseReason(\'' + r.id + '\')">删除</button></div>';
+      }
+      document.getElementById('reasonsList').innerHTML = html;
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function addCloseReason() {
+  var inp = document.getElementById('newReasonName');
+  var name = inp.value.trim();
+  if (!name) { alert('请输入原因名称'); return; }
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/close-reasons', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        inp.value = '';
+        loadCloseReasons();
+      } else { alert(d.error || '添加失败'); }
+    } catch(e) { alert('添加失败'); }
+  };
+  xhr.send(JSON.stringify({name: name}));
+}
+
+function deleteCloseReason(rid) {
+  if (!confirm('确定删除该关闭原因？已存在的工单记录不受影响。')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/close-reasons/' + rid, true);
+  xhr.onload = function() { loadCloseReasons(); };
+  xhr.send();
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+loadTickets();
+
+// ===== 数据统计 =====
+function loadStats() {
+  var totalTxt = {today:'今日', this_week:'本周', this_month:'本月'};
+  // Load overview
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/stats/overview', true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      var t = d.today || {};
+      document.getElementById('stTodayTotal').textContent = t.total || 0;
+      document.getElementById('stTodayOpen').textContent = (t.open || 0) + (t.assigned || 0);
+      document.getElementById('stTodayClosed').textContent = (t.closed || 0) + (t.resolved || 0);
+      document.getElementById('stTodayRating').textContent = d.avg_rating || 0;
+      document.getElementById('stTodayResp').textContent = (d.avg_response_time || 0) + 'm';
+      // Weekly chart
+      var chart = document.getElementById('weeklyChart');
+      if (d.tickets_by_date && d.tickets_by_date.length > 0) {
+        var maxVal = Math.max(1, Math.max.apply(null, d.tickets_by_date.map(function(x){return x.count;})));
+        chart.innerHTML = '';
+        d.tickets_by_date.forEach(function(day) {
+          var pct = Math.max(3, (day.count / maxVal) * 100);
+          chart.innerHTML += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end">' +
+            '<div style="width:80%;background:linear-gradient(to top, #1a73e8, #64b5f6);border-radius:4px 4px 0 0;height:'+pct+'%;min-height:8px;transition:height 0.5s"></div>' +
+            '<span style="font-size:9px;color:#888;margin-top:4px">'+day.date.substring(5)+'</span>' +
+            '<span style="font-size:10px;font-weight:600;color:#333">'+day.count+'</span></div>';
+        });
+      } else {
+        chart.innerHTML = '<div style="color:#999;text-align:center;width:100%">暂无数据</div>';
+      }
+    } catch(e) { console.error('Stats load error', e); }
+  };
+  xhr.send();
+  // Load agent performance
+  var ahr = new XMLHttpRequest();
+  ahr.open('GET', '/api/admin/stats/agents', true);
+  ahr.onload = function() {
+    try {
+      var agents = JSON.parse(ahr.responseText);
+      if (!agents || agents.length === 0) {
+        document.getElementById('agentStatsTable').innerHTML = '<tr><td colspan="6" class="status-text">暂无客服数据</td></tr>';
+        return;
+      }
+      agents.sort(function(a,b){return b.resolved_count - a.resolved_count;});
+      var html = '<tr><th>排名</th><th>客服</th><th>已解决</th><th>平均评分</th><th>响应时间</th><th>活跃工单</th></tr>';
+      agents.forEach(function(a, i) {
+        var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : (i+1)));
+        var stars = '';
+        for (var s = 0; s < Math.round(a.avg_rating || 0); s++) stars += '★';
+        if (!stars) stars = '-';
+        html += '<tr>' +
+          '<td style="text-align:center;font-size:16px">'+medal+'</td>' +
+          '<td><b>'+(a.display_name||a.name)+'</b></td>' +
+          '<td style="font-weight:600;color:#43a047">'+a.resolved_count+'</td>' +
+          '<td class="stars">'+stars+'</td>' +
+          '<td>'+(a.avg_response_time > 0 ? Math.round(a.avg_response_time)+'分钟' : '-')+'</td>' +
+          '<td>'+(a.active_tickets > 0 ? a.active_tickets : '-')+'</td></tr>';
+      });
+      document.getElementById('agentStatsTable').innerHTML = html;
+    } catch(e) { console.error('Agent stats error', e); }
+  };
+  ahr.send();
+}
+
+// ===== CSV导出 =====
+function exportCSV() {
+  var status = document.getElementById('ticketStatusFilter').value;
+  var params = '?status=' + status;
+  window.location.href = '/api/admin/tickets/export' + params;
+}
+
+// Load stats when switching to that tab
+var _origSwitch = switchPage;
+switchPage = function(page, el) {
+  _origSwitch(page, el);
+  if (page === 'stats') loadStats();
+};
+
+
+
+// ===== Webhook 管理 =====
+function loadWebhooks() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/webhooks', true);
+  xhr.onload = function() {
+    try {
+      var hooks = JSON.parse(xhr.responseText);
+      renderWebhookTable(hooks);
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function renderWebhookTable(hooks) {
+  var html = '<tr><th>名称</th><th>URL</th><th>事件</th><th>重试</th><th>状态</th><th>创建时间</th><th>操作</th></tr>';
+  if (!hooks || hooks.length === 0) {
+    html += '<tr><td colspan="7" class="status-text">暂无 Webhook 配置</td></tr>';
+    document.getElementById('webhookTable').innerHTML = html;
+    return;
+  }
+  for (var i = 0; i < hooks.length; i++) {
+    var h = hooks[i];
+    var statusBadge = h.enabled == 1 ? '<span style="background:#43a047;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px">启用</span>' : '<span style="background:#888;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px">停用</span>';
+    var events = JSON.parse(h.events || '[]');
+    var eventStr = '';
+    for (var j = 0; j < events.length; j++) {
+      eventStr += events[j] === '*' ? '<span style="background:#1a73e8;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin:0 2px">全部</span>' : '<span style="background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:4px;font-size:10px;margin:0 2px">'+events[j]+'</span>';
+    }
+    html += '<tr>' +
+      '<td><b>' + h.name + '</b></td>' +
+      '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:#555">' + h.url + '</td>' +
+      '<td>' + eventStr + '</td>' +
+      '<td style="text-align:center">' + h.retry + '</td>' +
+      '<td>' + statusBadge + '</td>' +
+      '<td style="font-size:11px;color:#888">' + (h.created_at || '') + '</td>' +
+      '<td style="white-space:nowrap">' +
+        '<button onclick="editWebhook(' + h.id + ')" style="background:#1a73e8;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">编辑</button>' +
+        '<button onclick="testWebhook(' + h.id + ')" style="background:#ff8f00;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">测试</button>' +
+        '<button onclick="deleteWebhook(' + h.id + ')" style="background:#ff5252;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">删除</button>' +
+      '</td></tr>';
+  }
+  document.getElementById('webhookTable').innerHTML = html;
+}
+
+function saveWebhook() {
+  var name = document.getElementById('whName').value.trim();
+  var url = document.getElementById('whUrl').value.trim();
+  if (!name || !url) { alert('请填写名称和 URL'); return; }
+  var editId = document.getElementById('webhookEditId').innerHTML;
+  var events = document.getElementById('whEvents').value.trim();
+  var eventArr = events === '*' ? ['*'] : events.split(',').map(function(e){return e.trim()}).filter(function(e){return e});
+  if (eventArr.length === 0) eventArr = ['*'];
+  var data = {
+    name: name, url: url,
+    secret: document.getElementById('whSecret').value.trim(),
+    events: eventArr,
+    retry: parseInt(document.getElementById('whRetry').value) || 3,
+    timeout: parseInt(document.getElementById('whTimeout').value) || 10
+  };
+  var xhr = new XMLHttpRequest();
+  var method = editId ? 'PUT' : 'POST';
+  var endpoint = editId ? '/api/admin/webhooks/' + editId : '/api/admin/webhooks';
+  xhr.open(method, endpoint, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      document.getElementById('whStatus').style.display = 'inline';
+      setTimeout(function(){document.getElementById('whStatus').style.display = 'none'}, 2000);
+      clearWebhookForm();
+      loadWebhooks();
+      loadWebhookLogs();
+    } else { alert('保存失败'); }
+  };
+  xhr.send(JSON.stringify(data));
+}
+
+function editWebhook(id) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/webhooks', true);
+  xhr.onload = function() {
+    try {
+      var hooks = JSON.parse(xhr.responseText);
+      for (var i = 0; i < hooks.length; i++) {
+        if (hooks[i].id === id) {
+          var h = hooks[i];
+          document.getElementById('webhookEditId').innerHTML = id;
+          document.getElementById('whName').value = h.name;
+          document.getElementById('whUrl').value = h.url;
+          document.getElementById('whSecret').value = h.secret || '';
+          var ev = JSON.parse(h.events || '[]');
+          document.getElementById('whEvents').value = ev.join(', ') || '*';
+          document.getElementById('whRetry').value = h.retry || 3;
+          document.getElementById('whTimeout').value = h.timeout || 10;
+          document.getElementById('whCancelBtn').style.display = 'inline';
+          return;
+        }
+      }
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function cancelWebhookEdit() {
+  clearWebhookForm();
+  document.getElementById('whCancelBtn').style.display = 'none';
+}
+
+function clearWebhookForm() {
+  document.getElementById('webhookEditId').innerHTML = '';
+  document.getElementById('whName').value = '';
+  document.getElementById('whUrl').value = '';
+  document.getElementById('whSecret').value = '';
+  document.getElementById('whEvents').value = '*';
+  document.getElementById('whRetry').value = '3';
+  document.getElementById('whTimeout').value = '10';
+  document.getElementById('whCancelBtn').style.display = 'none';
+}
+
+function deleteWebhook(id) {
+  if (!confirm('确定删除该 Webhook 配置？')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/webhooks/' + id, true);
+  xhr.onload = function() {
+    if (xhr.status === 200) { loadWebhooks(); }
+  };
+  xhr.send();
+}
+
+function testWebhook(id) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/webhooks', true);
+  xhr.onload = function() {
+    try {
+      var hooks = JSON.parse(xhr.responseText);
+      for (var i = 0; i < hooks.length; i++) {
+        if (hooks[i].id === id) {
+          var url = hooks[i].url;
+          var txhr = new XMLHttpRequest();
+          txhr.open('POST', '/api/admin/webhooks/test', true);
+          txhr.setRequestHeader('Content-Type', 'application/json');
+          txhr.onload = function() {
+            var result = JSON.parse(txhr.responseText);
+            if (result.ok) { alert('测试成功！HTTP ' + result.status_code); }
+            else { alert('测试失败: ' + (result.error || result.body || 'HTTP ' + result.status_code)); }
+          };
+          txhr.send(JSON.stringify({url: url}));
+          return;
+        }
+      }
+    } catch(e) { alert('测试失败: ' + e.message); }
+  };
+  xhr.send();
+}
+
+function loadWebhookLogs() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/webhooks/logs', true);
+  xhr.onload = function() {
+    try {
+      var logs = JSON.parse(xhr.responseText);
+      renderWebhookLogTable(logs);
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function renderWebhookLogTable(logs) {
+  var html = '<tr><th>Webhook</th><th>事件</th><th>状态</th><th>HTTP</th><th>尝试</th><th>错误信息</th><th>时间</th></tr>';
+  if (!logs || logs.length === 0) {
+    html += '<tr><td colspan="7" class="status-text">暂无发送日志</td></tr>';
+    document.getElementById('webhookLogTable').innerHTML = html;
+    return;
+  }
+  for (var i = 0; i < logs.length; i++) {
+    var l = logs[i];
+    var statusBadge = l.status === 'delivered'
+      ? '<span style="background:#43a047;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px">成功</span>'
+      : '<span style="background:#e53935;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px">失败</span>';
+    html += '<tr>' +
+      '<td style="font-size:12px">' + (l.webhook_name || l.webhook_id || '-') + '</td>' +
+      '<td style="font-size:11px;color:#555">' + l.event_type + '</td>' +
+      '<td>' + statusBadge + '</td>' +
+      '<td style="text-align:center;font-size:12px">' + (l.status_code || '-') + '</td>' +
+      '<td style="text-align:center;font-size:12px">' + (l.attempt || 1) + '</td>' +
+      '<td style="font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;color:#888">' + (l.error || '-') + '</td>' +
+      '<td style="font-size:11px;color:#888">' + l.created_at + '</td></tr>';
+  }
+  document.getElementById('webhookLogTable').innerHTML = html;
+}
+
+// ========== 移动端导航 ==========
+function toggleMobileNav() {
+  var nav = document.getElementById('navTabs');
+  nav.classList.toggle('open');
+}
+
+// 点击外部关闭导航
+window.addEventListener('click', function(e) {
+  var nav = document.getElementById('navTabs');
+  var btn = document.getElementById('navToggle');
+  if (nav && nav.classList.contains('open') && !nav.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+    nav.classList.remove('open');
+  }
+});
+
+// ====== IM 适配器管理 ======
+var currentIMAdapterEditId = '';
+
+function loadIMAdapters() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/im-adapters', true);
+  xhr.onload = function() {
+    try {
+      var adapters = JSON.parse(xhr.responseText);
+      renderIMAdapterTable(adapters);
+      populateIMAdapterSelects(adapters);
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function renderIMAdapterTable(adapters) {
+  var html = '<tr><th>平台</th><th>名称</th><th>状态</th><th>回调URL</th><th>更新时间</th><th>操作</th></tr>';
+  if (!adapters || adapters.length === 0) {
+    html += '<tr><td colspan="6" class="status-text">暂无适配器配置</td></tr>';
+    document.getElementById('imAdapterTable').innerHTML = html;
+    return;
+  }
+  var platformIcons = {wecom:'💬 企微', dingtalk:'📎 钉钉', feishu:'📄 飞书'};
+  for (var i = 0; i < adapters.length; i++) {
+    var a = adapters[i];
+    var enabledHtml = '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer">' +
+      '<input type="checkbox" ' + (a.enabled == 1 ? 'checked' : '') + ' onchange="toggleIMAdapter(\''+a.id+'\',this.checked)" style="accent-color:#7b1fa2">' +
+      '<span style="font-size:12px;color:' + (a.enabled == 1 ? '#43a047' : '#888') + '">' + (a.enabled == 1 ? '已启用' : '已禁用') + '</span></label>';
+    html += '<tr>' +
+      '<td><span style="font-weight:600">' + (platformIcons[a.platform] || a.platform) + '</span></td>' +
+      '<td>' + a.name + '</td>' +
+      '<td>' + enabledHtml + '</td>' +
+      '<td style="font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;color:#888">' + (a.callback_url || '-') + '</td>' +
+      '<td style="font-size:11px;color:#888">' + (a.updated_at || a.created_at || '-') + '</td>' +
+      '<td style="white-space:nowrap">' +
+        '<button onclick="editIMAdapter(\''+a.id+'\')" style="background:#7b1fa2;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">编辑</button>' +
+        '<button onclick="testIMAdapter(\''+a.id+'\')" style="background:#ff8f00;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">测试</button>' +
+        '<button onclick="deleteIMAdapter(\''+a.id+'\')" style="background:#e53935;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">删除</button>' +
+      '</td></tr>';
+  }
+  document.getElementById('imAdapterTable').innerHTML = html;
+}
+
+function populateIMAdapterSelects(adapters) {
+  var sel = document.getElementById('imNotifyAdapter');
+  var msel = document.getElementById('imMappingAdapter');
+  if (!adapters || adapters.length === 0) {
+    sel.innerHTML = '<option value="">暂无可用适配器</option>';
+    msel.innerHTML = '<option value="">暂无可用适配器</option>';
+    return;
+  }
+  var html = '<option value="">选择适配器...</option>';
+  var mhtml = '<option value="">选择适配器...</option>';
+  for (var i = 0; i < adapters.length; i++) {
+    var label = adapters[i].name + ' (' + adapters[i].platform + ')';
+    if (adapters[i].enabled == 1) {
+      html += '<option value="' + adapters[i].id + '">' + label + '</option>';
+    }
+    mhtml += '<option value="' + adapters[i].id + '">' + label + '</option>';
+  }
+  sel.innerHTML = html;
+  msel.innerHTML = mhtml;
+}
+
+function toggleIMAdapter(aid, enabled) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', '/api/admin/im-adapters/' + aid, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() { loadIMAdapters(); };
+  xhr.send(JSON.stringify({enabled: enabled ? 1 : 0}));
+}
+
+function showAddIMAdapter() {
+  currentIMAdapterEditId = '';
+  document.getElementById('imAdapterFormName').value = '';
+  document.getElementById('imAdapterFormPlatform').value = 'wecom';
+  document.getElementById('imAdapterFormConfig').value = '{"corpid":"","agentid":"","corpsecret":""}';
+  document.getElementById('imAdapterFormCallback').value = '';
+  document.getElementById('imAdapterFormToken').value = '';
+  document.getElementById('imAdapterFormAesKey').value = '';
+  document.getElementById('imAdapterModalTitle').textContent = '新增适配器';
+  document.getElementById('imAdapterModal').classList.add('show');
+}
+
+function editIMAdapter(aid) {
+  currentIMAdapterEditId = aid;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/im-adapters', true);
+  xhr.onload = function() {
+    try {
+      var adapters = JSON.parse(xhr.responseText);
+      for (var i = 0; i < adapters.length; i++) {
+        if (adapters[i].id === aid) {
+          var a = adapters[i];
+          document.getElementById('imAdapterFormName').value = a.name || '';
+          document.getElementById('imAdapterFormPlatform').value = a.platform || 'wecom';
+          document.getElementById('imAdapterFormConfig').value = formatConfigJSON(a.config);
+          document.getElementById('imAdapterFormCallback').value = a.callback_url || '';
+          document.getElementById('imAdapterFormToken').value = a.token || '';
+          document.getElementById('imAdapterFormAesKey').value = a.encoding_aes_key || '';
+          document.getElementById('imAdapterModalTitle').textContent = '编辑适配器 - ' + a.name;
+          document.getElementById('imAdapterModal').classList.add('show');
+          return;
+        }
+      }
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function formatConfigJSON(configStr) {
+  try {
+    var obj = JSON.parse(configStr);
+    return JSON.stringify(obj, null, 2);
+  } catch(e) { return configStr; }
+}
+
+function saveIMAdapter() {
+  var name = document.getElementById('imAdapterFormName').value.trim();
+  var platform = document.getElementById('imAdapterFormPlatform').value;
+  var configStr = document.getElementById('imAdapterFormConfig').value.trim();
+  if (!name) { alert('请填写适配器名称'); return; }
+  var configObj = {};
+  try { configObj = JSON.parse(configStr); } catch(e) { alert('配置必须是合法的 JSON 格式'); return; }
+  var data = {
+    name: name,
+    platform: platform,
+    config: configObj,
+    callback_url: document.getElementById('imAdapterFormCallback').value.trim(),
+    token: document.getElementById('imAdapterFormToken').value.trim(),
+    encoding_aes_key: document.getElementById('imAdapterFormAesKey').value.trim()
+  };
+  var xhr = new XMLHttpRequest();
+  if (currentIMAdapterEditId) {
+    xhr.open('PUT', '/api/admin/im-adapters/' + currentIMAdapterEditId, true);
+  } else {
+    xhr.open('POST', '/api/admin/im-adapters', true);
+  }
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    document.getElementById('imAdapterModal').classList.remove('show');
+    loadIMAdapters();
+  };
+  xhr.send(JSON.stringify(data));
+}
+
+function deleteIMAdapter(aid) {
+  if (!confirm('确定删除此适配器？关联的消息记录和用户映射也将被清除！')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/im-adapters/' + aid, true);
+  xhr.onload = function() { loadIMAdapters(); };
+  xhr.send();
+}
+
+function testIMAdapter(aid) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/im-adapters/' + aid + '/test', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var resp = JSON.parse(xhr.responseText);
+      if (resp.ok) { alert('✅ ' + (resp.message || '连接成功')); }
+      else { alert('❌ ' + (resp.message || '连接失败')); }
+    } catch(e) { alert('测试请求失败'); }
+  };
+  xhr.onerror = function() { alert('网络错误'); };
+  xhr.send('{}');
+}
+
+function sendIMNotification() {
+  var adapterId = document.getElementById('imNotifyAdapter').value;
+  var userId = document.getElementById('imNotifyUserId').value.trim();
+  var content = document.getElementById('imNotifyContent').value.trim();
+  if (!adapterId) { alert('请选择适配器'); return; }
+  if (!userId) { alert('请输入平台用户ID'); return; }
+  if (!content) { alert('请输入通知内容'); return; }
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/im/notify', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var resp = JSON.parse(xhr.responseText);
+      if (resp.ok || !resp.error) {
+        document.getElementById('imNotifyStatus').style.display = 'inline';
+        document.getElementById('imNotifyStatus').textContent = '✅ 已发送';
+        setTimeout(function(){document.getElementById('imNotifyStatus').style.display = 'none';}, 3000);
+      } else { alert('发送失败: ' + (resp.error || JSON.stringify(resp))); }
+    } catch(e) { alert('发送完成'); }
+  };
+  xhr.send(JSON.stringify({adapter_id: adapterId, user_id: userId, content: content}));
+}
+
+// ====== IM 用户映射 ======
+function loadIMMappings() {
+  var aid = document.getElementById('imMappingAdapter').value;
+  if (!aid) {
+    document.getElementById('imMappingTable').innerHTML = '<tr><td colspan="6" class="status-text">请先选择适配器</td></tr>';
+    return;
+  }
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/im-adapters/' + aid + '/mappings', true);
+  xhr.onload = function() {
+    try {
+      var mappings = JSON.parse(xhr.responseText);
+      var html = '<tr><th>平台用户ID</th><th>平台用户名</th><th>关联客户</th><th>关联客服</th><th>创建时间</th><th>操作</th></tr>';
+      if (!mappings || mappings.length === 0) {
+        html += '<tr><td colspan="6" class="status-text">暂无映射关系</td></tr>';
+      } else {
+        for (var i = 0; i < mappings.length; i++) {
+          var m = mappings[i];
+          html += '<tr>' +
+            '<td style="font-family:monospace;font-size:11px">' + (m.platform_user_id || '-') + '</td>' +
+            '<td>' + (m.platform_username || '-') + '</td>' +
+            '<td>' + (m.customer_name || m.smartcs_customer_id || '-') + '</td>' +
+            '<td>' + (m.agent_name || m.smartcs_agent_id || '-') + '</td>' +
+            '<td style="font-size:11px;color:#888">' + m.created_at + '</td>' +
+            '<td><button onclick="deleteIMMapping(\''+m.id+'\')" style="background:#e53935;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px">删除</button></td></tr>';
+        }
+      }
+      document.getElementById('imMappingTable').innerHTML = html;
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function showAddIMMapping() {
+  var aid = document.getElementById('imMappingAdapter').value;
+  if (!aid) { alert('请先选择适配器'); return; }
+  var userId = prompt('请输入平台用户ID（企微/钉钉用户ID）：');
+  if (!userId) return;
+  var customerId = prompt('请输入 SmartCS 客户ID（留空则不关联客户）：');
+  var agentId = prompt('请输入 SmartCS 客服ID（留空则不关联客服）：');
+  var username = prompt('请输入平台用户名（选填）：');
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/im-adapters/' + aid + '/mappings', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var resp = JSON.parse(xhr.responseText);
+      if (resp.ok) { loadIMMappings(); }
+      else { alert('绑定失败: ' + (resp.error || '未知错误')); }
+    } catch(e) { alert('绑定失败'); }
+  };
+  xhr.send(JSON.stringify({
+    platform_user_id: userId,
+    smartcs_customer_id: customerId || '',
+    smartcs_agent_id: agentId || '',
+    platform_username: username || ''
+  }));
+}
+
+function deleteIMMapping(mid) {
+  if (!confirm('确定删除此映射关系？')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/im-mappings/' + mid, true);
+  xhr.onload = function() { loadIMMappings(); };
+  xhr.send();
+}
+
+// ====== IM 消息记录 ======
+function loadIMMessages() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/im-messages', true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      var msgs = d.messages || [];
+      var html = '<tr><th>适配器</th><th>方向</th><th>平台用户</th><th>类型</th><th>内容</th><th>时间</th></tr>';
+      if (msgs.length === 0) {
+        html += '<tr><td colspan="6" class="status-text">暂无消息记录</td></tr>';
+      } else {
+        var dirIcons = {inbound:'📥 接收', outbound:'📤 发送'};
+        var statusColors = {sent:'#1a73e8', delivered:'#43a047', failed:'#e53935'};
+        for (var i = 0; i < msgs.length; i++) {
+          var m = msgs[i];
+          var statusDot = '<span style="color:' + (statusColors[m.status] || '#888') + ';font-size:10px">●</span>';
+          html += '<tr>' +
+            '<td style="font-size:11px">' + (m.adapter_name || m.adapter_id || '-') + '</td>' +
+            '<td>' + (dirIcons[m.direction] || m.direction) + '</td>' +
+            '<td style="font-family:monospace;font-size:11px">' + m.platform_user_id + '</td>' +
+            '<td style="font-size:11px">' + m.msg_type + '</td>' +
+            '<td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.content || '-') + '</td>' +
+            '<td style="font-size:11px;color:#888">' + m.created_at + '</td></tr>';
+        }
+      }
+      document.getElementById('imMessageTable').innerHTML = html;
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+// 在切换页面时自动加载 IM 数据
+var _origWebhookSwitch = switchPage;
+switchPage = function(page, el) {
+  _origWebhookSwitch(page, el);
+  if (page === 'webhooks') {
+    loadIMAdapters();
+    loadIMMessages();
+    setTimeout(enhanceTablesForMobile, 200);
+  }
+};
+
+// 移动端：自动给表格动态添加 data-label 属性
+function enhanceTablesForMobile() {
+  if (window.innerWidth > 767) return;
+  var tables = document.querySelectorAll('.card-body > table');
+  tables.forEach(function(table) {
+    var headers = [];
+    var headerRow = table.querySelector('tr');
+    if (headerRow) {
+      var ths = headerRow.querySelectorAll('th');
+      ths.forEach(function(th) { headers.push(th.textContent.trim()); });
+    }
+    if (headers.length > 0) {
+      var rows = table.querySelectorAll('tbody tr');
+      if (rows.length === 0) rows = table.querySelectorAll('tr:not(:first-child)');
+      rows.forEach(function(row) {
+        var cells = row.querySelectorAll('td');
+        cells.forEach(function(td, idx) {
+          if (idx < headers.length && !td.hasAttribute('data-label')) {
+            td.setAttribute('data-label', headers[idx]);
+          }
+        });
+      });
+    }
+    table.closest('.card-body') && table.closest('.card-body').classList.add('table-as-cards');
+  });
+}
+
+// 在每次表格渲染后调用增强
+(function() {
+  var origLoadTickets = loadTickets;
+  loadTickets = function() {
+    origLoadTickets();
+    setTimeout(enhanceTablesForMobile, 100);
+  };
+  var origLoadUsers = loadUsers;
+  loadUsers = function() {
+    origLoadUsers();
+    setTimeout(enhanceTablesForMobile, 100);
+  };
+  var origLoadAgents = loadAgents;
+  loadAgents = function() {
+    origLoadAgents();
+    setTimeout(enhanceTablesForMobile, 100);
+  };
+  // Initial call after DOM ready
+  setTimeout(enhanceTablesForMobile, 500);
+  // Re-enhance on resize
+  var resizeTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(enhanceTablesForMobile, 200);
+  });
+})();
+
+// 在 tab 切换时重新增强表格
+var _origSwitchPage = switchPage;
+switchPage = function(page, el) {
+  _origSwitchPage(page, el);
+  setTimeout(enhanceTablesForMobile, 200);
+};
+
+// ====== 外部服务适配器管理 ======
+var currentExtAdapterEditId = '';
+var extAdapterConfigTemplates = {
+  jira: '{\n  "url": "https://jira.example.com",\n  "api_token": "",\n  "project_key": "PROJ"\n}',
+  zentao: '{\n  "url": "https://zentao.example.com",\n  "api_key": "",\n  "project_id": ""\n}',
+  github: '{\n  "repo": "owner/repo",\n  "token": ""\n}',
+  gitlab: '{\n  "url": "https://gitlab.example.com",\n  "token": "",\n  "project_id": ""\n}',
+  custom: '{\n  "url": "",\n  "api_key": ""\n}'
+};
+
+var extConfigHints = {
+  jira: 'Jira: {"url":"...","api_token":"...","project_key":"PROJ"}',
+  zentao: '禅道: {"url":"...","api_key":"...","project_id":"1"}',
+  github: 'GitHub: {"repo":"owner/repo","token":"..."}',
+  gitlab: 'GitLab: {"url":"...","token":"...","project_id":"1"}',
+  custom: '自定义: 根据需求填写配置字段'
+};
+
+function updateExtConfigTemplate() {
+  var platform = document.getElementById('extAdapterFormPlatform').value;
+  document.getElementById('extAdapterFormConfig').value = extAdapterConfigTemplates[platform] || '{}';
+  document.getElementById('extConfigHint').textContent = extConfigHints[platform] || '';
+}
+
+function loadExtAdapters() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/external-adapters', true);
+  xhr.onload = function() {
+    try {
+      var adapters = JSON.parse(xhr.responseText);
+      renderExtAdapterTable(adapters);
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function renderExtAdapterTable(adapters) {
+  var html = '<tr><th>名称</th><th>类型</th><th>平台</th><th>状态</th><th>创建时间</th><th>操作</th></tr>';
+  if (!adapters || adapters.length === 0) {
+    html += '<tr><td colspan="6" class="status-text">暂无适配器配置</td></tr>';
+    document.getElementById('extAdapterTable').innerHTML = html;
+    return;
+  }
+  var typeLabels = {defect:'🐛 缺陷', order_query:'📦 订单', knowledge:'📚 知识库', custom:'🔌 自定义'};
+  var platformIcons = {jira:'📌 Jira', zentao:'🐉 禅道', github:'🐙 GitHub', gitlab:'🦊 GitLab', custom:'🔌 自定义'};
+  for (var i = 0; i < adapters.length; i++) {
+    var a = adapters[i];
+    var enabledHtml = '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer">' +
+      '<input type="checkbox" ' + (a.enabled == 1 ? 'checked' : '') + ' onchange="toggleExtAdapter(\''+a.id+'\',this.checked)" style="accent-color:#2e7d32">' +
+      '<span style="font-size:12px;color:' + (a.enabled == 1 ? '#43a047' : '#888') + '">' + (a.enabled == 1 ? '已启用' : '已禁用') + '</span></label>';
+    html += '<tr>' +
+      '<td>' + escapeHtml(a.name) + '</td>' +
+      '<td>' + (typeLabels[a.adapter_type] || a.adapter_type) + '</td>' +
+      '<td><span style="font-weight:600">' + (platformIcons[a.platform] || a.platform) + '</span></td>' +
+      '<td>' + enabledHtml + '</td>' +
+      '<td style="font-size:11px;color:#888">' + (a.created_at || '-') + '</td>' +
+      '<td style="white-space:nowrap">' +
+        '<button onclick="editExtAdapter(\''+a.id+'\')" style="background:#2e7d32;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">编辑</button>' +
+        '<button onclick="testExtAdapter(\''+a.id+'\')" style="background:#ff8f00;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">测试</button>' +
+        '<button onclick="deleteExtAdapter(\''+a.id+'\')" style="background:#e53935;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">删除</button>' +
+      '</td></tr>';
+  }
+  document.getElementById('extAdapterTable').innerHTML = html;
+}
+
+function toggleExtAdapter(aid, enabled) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', '/api/admin/external-adapters/' + aid, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() { loadExtAdapters(); };
+  xhr.send(JSON.stringify({enabled: enabled ? 1 : 0}));
+}
+
+function showAddExtAdapter() {
+  currentExtAdapterEditId = '';
+  document.getElementById('extAdapterFormName').value = '';
+  document.getElementById('extAdapterFormType').value = 'defect';
+  document.getElementById('extAdapterFormPlatform').value = 'jira';
+  updateExtConfigTemplate();
+  document.getElementById('extAdapterModalTitle').textContent = '新增外部服务适配器';
+  document.getElementById('extAdapterModal').classList.add('show');
+}
+
+function editExtAdapter(aid) {
+  currentExtAdapterEditId = aid;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/external-adapters', true);
+  xhr.onload = function() {
+    try {
+      var adapters = JSON.parse(xhr.responseText);
+      for (var i = 0; i < adapters.length; i++) {
+        if (adapters[i].id === aid) {
+          var a = adapters[i];
+          document.getElementById('extAdapterFormName').value = a.name || '';
+          document.getElementById('extAdapterFormType').value = a.adapter_type || 'defect';
+          document.getElementById('extAdapterFormPlatform').value = a.platform || 'jira';
+          try {
+            var cfg = JSON.parse(a.config);
+            document.getElementById('extAdapterFormConfig').value = JSON.stringify(cfg, null, 2);
+          } catch(e) {
+            document.getElementById('extAdapterFormConfig').value = a.config || '{}';
+          }
+          document.getElementById('extAdapterModalTitle').textContent = '编辑适配器 - ' + a.name;
+          document.getElementById('extAdapterModal').classList.add('show');
+          return;
+        }
+      }
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function saveExtAdapter() {
+  var name = document.getElementById('extAdapterFormName').value.trim();
+  var adapterType = document.getElementById('extAdapterFormType').value;
+  var platform = document.getElementById('extAdapterFormPlatform').value;
+  var configStr = document.getElementById('extAdapterFormConfig').value.trim();
+  if (!name) { alert('请填写适配器名称'); return; }
+  var configObj = {};
+  try { configObj = JSON.parse(configStr); } catch(e) { alert('配置必须是合法的 JSON 格式'); return; }
+  var data = {name: name, adapter_type: adapterType, platform: platform, config: configObj};
+  var xhr = new XMLHttpRequest();
+  if (currentExtAdapterEditId) {
+    xhr.open('PUT', '/api/admin/external-adapters/' + currentExtAdapterEditId, true);
+  } else {
+    xhr.open('POST', '/api/admin/external-adapters', true);
+  }
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    document.getElementById('extAdapterModal').classList.remove('show');
+    loadExtAdapters();
+  };
+  xhr.send(JSON.stringify(data));
+}
+
+function deleteExtAdapter(aid) {
+  if (!confirm('确定删除此适配器？关联的外部链接不受影响。')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/external-adapters/' + aid, true);
+  xhr.onload = function() { loadExtAdapters(); };
+  xhr.send();
+}
+
+function testExtAdapter(aid) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/external-adapters/' + aid + '/test', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var resp = JSON.parse(xhr.responseText);
+      if (resp.ok) { alert('✅ ' + (resp.message || '配置验证通过')); }
+      else { alert('❌ ' + (resp.message || '配置验证失败')); }
+    } catch(e) { alert('测试请求失败'); }
+  };
+  xhr.onerror = function() { alert('网络错误'); };
+  xhr.send('{}');
+}
+
+// ====== 外部系统关联管理 ======
+function loadExtLinks() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/external-links', true);
+  xhr.onload = function() {
+    try {
+      var links = JSON.parse(xhr.responseText);
+      renderExtLinkTable(links);
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function renderExtLinkTable(links) {
+  var html = '<tr><th>工单ID</th><th>外部系统</th><th>外部ID</th><th>外部链接</th><th>类型</th><th>状态</th><th>操作</th></tr>';
+  if (!links || links.length === 0) {
+    html += '<tr><td colspan="7" class="status-text">暂无关联</td></tr>';
+    document.getElementById('extLinkTable').innerHTML = html;
+    return;
+  }
+  for (var i = 0; i < links.length; i++) {
+    var l = links[i];
+    var urlHtml = l.external_url ? '<a href="' + l.external_url + '" target="_blank" style="color:#1a73e8;font-size:12px">🔗 查看</a>' : '-';
+    var sysLabels = {jira:'📌 Jira', zentao:'🐉 禅道', github:'🐙 GitHub', gitlab:'🦊 GitLab'};
+    var typeLabel = l.link_type === 'defect' ? '🐛 缺陷' : '📎 引用';
+    var statusDot = l.sync_status === 'active' ? '<span style="color:#43a047;font-size:11px">● 活跃</span>' : '<span style="color:#888;font-size:11px">● ' + l.sync_status + '</span>';
+    html += '<tr>' +
+      '<td style="font-family:monospace;font-size:11px">' + (l.ticket_id || '-').substring(0,20) + '</td>' +
+      '<td style="font-size:12px">' + (sysLabels[l.external_system] || l.external_system) + '</td>' +
+      '<td style="font-family:monospace;font-size:11px;color:#333">' + l.external_id + '</td>' +
+      '<td>' + urlHtml + '</td>' +
+      '<td style="font-size:12px">' + typeLabel + '</td>' +
+      '<td>' + statusDot + '</td>' +
+      '<td><button onclick="deleteExtLink(\''+l.id+'\')" style="background:#e53935;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px">删除</button></td></tr>';
+  }
+  document.getElementById('extLinkTable').innerHTML = html;
+}
+
+function addExtLink() {
+  var ticketId = document.getElementById('extLinkTicketId').value.trim();
+  var externalId = document.getElementById('extLinkExternalId').value.trim();
+  var externalUrl = document.getElementById('extLinkExternalUrl').value.trim();
+  if (!ticketId || !externalId) { alert('请填写工单ID和外部ID'); return; }
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/external-links', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        document.getElementById('extLinkTicketId').value = '';
+        document.getElementById('extLinkExternalId').value = '';
+        document.getElementById('extLinkExternalUrl').value = '';
+        loadExtLinks();
+        alert('关联已添加');
+      } else { alert('添加失败: ' + (d.error || '未知错误')); }
+    } catch(e) { alert('添加失败'); }
+  };
+  xhr.send(JSON.stringify({ticket_id: ticketId, external_system: 'jira', external_id: externalId, external_url: externalUrl}));
+}
+
+function deleteExtLink(lid) {
+  if (!confirm('确定删除此关联？')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/external-links/' + lid, true);
+  xhr.onload = function() { loadExtLinks(); };
+  xhr.send();
+}
+
+// 在切换页面时自动加载外部适配器数据
+var _origWebhookSwitchWithExt = switchPage;
+switchPage = function(page, el) {
+  _origWebhookSwitchWithExt(page, el);
+  if (page === 'webhooks') {
+    loadExtAdapters();
+    loadExtLinks();
+  }
+};
+
+// ====== 认证提供者管理 ======
+var currentAuthEditId = '';
+var authConfigFieldTemplates = {
+  ldap: [
+    {key:'server',label:'LDAP 服务器地址',type:'text',placeholder:'ldap.company.com'},
+    {key:'port',label:'端口',type:'number',default:389},
+    {key:'base_dn',label:'Base DN',type:'text',placeholder:'dc=company,dc=com'},
+    {key:'bind_dn',label:'Bind DN（管理员账号）',type:'text'},
+    {key:'bind_password',label:'Bind 密码',type:'password'},
+    {key:'user_filter',label:'用户过滤条件',type:'text',default:'(sAMAccountName={username})'},
+    {key:'use_ssl',label:'使用 SSL',type:'checkbox',default:false}
+  ],
+  oidc: [
+    {key:'client_id',label:'Client ID',type:'text'},
+    {key:'client_secret',label:'Client Secret',type:'password'},
+    {key:'discovery_url',label:'Discovery URL',type:'text',placeholder:'https://auth.company.com/.well-known/openid-configuration'},
+    {key:'redirect_uri',label:'回调地址 (Redirect URI)',type:'text',placeholder:'http://localhost:5000/agent/oidc/callback'},
+    {key:'scopes',label:'Scopes',type:'text',default:'openid profile email'}
+  ]
+};
+
+function renderAuthProviderConfigFields() {
+  var ptype = document.getElementById('authProviderType').value;
+  var fields = authConfigFieldTemplates[ptype] || [];
+  var html = '';
+  var existingConfig = document.getElementById('authProviderEditId').dataset.config || '{}';
+  var config = {};
+  try { config = JSON.parse(existingConfig); } catch(e) {}
+  for (var i = 0; i < fields.length; i++) {
+    var f = fields[i];
+    var val = config[f.key] !== undefined ? config[f.key] : (f.default !== undefined ? f.default : '');
+    if (f.type === 'checkbox') {
+      html += '<label style="margin-bottom:8px;display:block">';
+      html += '<input type="checkbox" id="authCfg_'+f.key+'" ' + (val ? 'checked' : '') + '> ' + f.label;
+      html += '</label>';
+    } else {
+      html += '<label>' + f.label + '</label>';
+      html += '<input type="'+f.type+'" id="authCfg_'+f.key+'" value="'+val.replace(/"/g,'&quot;')+'" ';
+      if (f.placeholder) html += 'placeholder="'+f.placeholder+'" ';
+      html += 'style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;font-family:inherit;margin-bottom:10px">';
+    }
+  }
+  document.getElementById('authProviderConfigFields').innerHTML = html;
+}
+
+function collectAuthProviderConfig() {
+  var ptype = document.getElementById('authProviderType').value;
+  var fields = authConfigFieldTemplates[ptype] || [];
+  var config = {};
+  for (var i = 0; i < fields.length; i++) {
+    var f = fields[i];
+    var el = document.getElementById('authCfg_'+f.key);
+    if (f.type === 'checkbox') {
+      config[f.key] = el.checked;
+    } else {
+      config[f.key] = el.value;
+    }
+  }
+  return config;
+}
+
+function showAddAuthProvider() {
+  currentAuthEditId = '';
+  document.getElementById('authProviderEditId').innerHTML = '';
+  delete document.getElementById('authProviderEditId').dataset.config;
+  document.getElementById('authProviderModalTitle').textContent = '新增认证提供者';
+  document.getElementById('authProviderName').value = '';
+  document.getElementById('authProviderType').value = 'ldap';
+  document.getElementById('authProviderEnabled').checked = true;
+  renderAuthProviderConfigFields();
+  document.getElementById('authProviderModal').classList.add('show');
+}
+
+function editAuthProvider(pid) {
+  currentAuthEditId = pid;
+  document.getElementById('authProviderModalTitle').textContent = '编辑认证提供者';
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/auth-providers', true);
+  xhr.onload = function() {
+    try {
+      var providers = JSON.parse(xhr.responseText);
+      for (var i = 0; i < providers.length; i++) {
+        if (providers[i].id === pid) {
+          var p = providers[i];
+          document.getElementById('authProviderName').value = p.name;
+          document.getElementById('authProviderType').value = p.provider_type;
+          document.getElementById('authProviderEnabled').checked = p.enabled === 1 || p.enabled === true;
+          document.getElementById('authProviderEditId').innerHTML = pid;
+          var cfg = typeof p.config === 'string' ? p.config : JSON.stringify(p.config);
+          document.getElementById('authProviderEditId').dataset.config = cfg;
+          renderAuthProviderConfigFields();
+          document.getElementById('authProviderModal').classList.add('show');
+          break;
+        }
+      }
+    } catch(e) { alert('加载失败'); }
+  };
+  xhr.send();
+}
+
+function saveAuthProvider() {
+  var name = document.getElementById('authProviderName').value.trim();
+  if (!name) { alert('请输入名称'); return; }
+  var ptype = document.getElementById('authProviderType').value;
+  var enabled = document.getElementById('authProviderEnabled').checked ? 1 : 0;
+  var config = collectAuthProviderConfig();
+  var pid = currentAuthEditId;
+  var method = pid ? 'PUT' : 'POST';
+  var url = pid ? '/api/admin/auth-providers/' + pid : '/api/admin/auth-providers';
+  var xhr = new XMLHttpRequest();
+  xhr.open(method, url, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        document.getElementById('authProviderModal').classList.remove('show');
+        loadAuthProviders();
+      } else { alert('保存失败: ' + (d.error || '')); }
+    } catch(e) { alert('保存失败'); }
+  };
+  xhr.send(JSON.stringify({name:name, provider_type:ptype, enabled:enabled, config:config}));
+}
+
+function deleteAuthProvider(pid) {
+  if (!confirm('确定删除此认证提供者？相关身份映射也将被删除。')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/admin/auth-providers/' + pid, true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) { loadAuthProviders(); loadAuthMappingFilter(); }
+      else { alert('删除失败: ' + (d.error || '')); }
+    } catch(e) { alert('删除失败'); }
+  };
+  xhr.send();
+}
+
+function testAuthProvider(pid) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/auth-providers/' + pid + '/test', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) { alert('✅ ' + (d.message || '连接成功')); }
+      else { alert('❌ ' + (d.message || '连接失败')); }
+    } catch(e) { alert('测试失败'); }
+  };
+  xhr.send('{}');
+}
+
+function loadAuthProviders() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/auth-providers', true);
+  xhr.onload = function() {
+    try {
+      var providers = JSON.parse(xhr.responseText);
+      var typeLabels = {ldap:'LDAP / AD', oidc:'OIDC / SSO', saml:'SAML'};
+      var html = '<tr><th>名称</th><th>类型</th><th>状态</th><th>创建时间</th><th>配置</th><th>操作</th></tr>';
+      if (!providers || providers.length === 0) {
+        html += '<tr><td colspan="6" class="status-text">暂无认证提供者配置</td></tr>';
+        document.getElementById('authProviderTable').innerHTML = html;
+        return;
+      }
+      for (var i = 0; i < providers.length; i++) {
+        var p = providers[i];
+        var cfgStr = '';
+        try {
+          var cfg = typeof p.config === 'string' ? JSON.parse(p.config) : p.config;
+          if (p.provider_type === 'ldap') cfgStr = cfg.server || '-';
+          else if (p.provider_type === 'oidc') cfgStr = cfg.discovery_url || cfg.client_id || '-';
+        } catch(e) { cfgStr = '配置错误'; }
+        var enabledIcon = p.enabled ? '🟢 启用' : '🔴 停用';
+        html += '<tr>' +
+          '<td><b>' + (p.name || '-') + '</b></td>' +
+          '<td>' + (typeLabels[p.provider_type] || p.provider_type) + '</td>' +
+          '<td>' + enabledIcon + '</td>' +
+          '<td style="font-size:11px;color:#888">' + (p.created_at || '-') + '</td>' +
+          '<td style="font-size:11px;color:#888;max-width:200px;overflow:hidden;text-overflow:ellipsis">' + cfgStr + '</td>' +
+          '<td>' +
+            '<button onclick="editAuthProvider(\''+p.id+'\')" style="background:#1565c0;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">编辑</button>' +
+            '<button onclick="testAuthProvider(\''+p.id+'\')" style="background:#ff8f00;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">测试</button>' +
+            '<button onclick="deleteAuthProvider(\''+p.id+'\')" style="background:#e53935;color:#fff;border:none;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:11px;margin:1px">删除</button>' +
+          '</td></tr>';
+      }
+      document.getElementById('authProviderTable').innerHTML = html;
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+function loadAuthMappingFilter() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/auth-providers', true);
+  xhr.onload = function() {
+    try {
+      var providers = JSON.parse(xhr.responseText);
+      var sel = document.getElementById('authMappingProvider');
+      sel.innerHTML = '<option value="">全部提供者</option>';
+      for (var i = 0; i < providers.length; i++) {
+        sel.innerHTML += '<option value="'+providers[i].id+'">'+providers[i].name+' ('+providers[i].provider_type+')</option>';
+      }
+      loadAuthMappings();
+    } catch(e) {}
+  };
+  xhr.send();
+}
+
+function loadAuthMappings() {
+  var pid = document.getElementById('authMappingProvider').value;
+  var url = '/api/admin/auth-mappings';
+  if (pid) url += '?provider_id=' + pid;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onload = function() {
+    try {
+      var mappings = JSON.parse(xhr.responseText);
+      var html = '<tr><th>外部用户</th><th>外部邮箱</th><th>关联客服</th><th>提供者</th><th>最后登录</th><th>创建时间</th></tr>';
+      if (!mappings || mappings.length === 0) {
+        html += '<tr><td colspan="6" class="status-text">暂无身份映射</td></tr>';
+        document.getElementById('authMappingTable').innerHTML = html;
+        return;
+      }
+      for (var i = 0; i < mappings.length; i++) {
+        var m = mappings[i];
+        html += '<tr>' +
+          '<td><b>' + (m.external_username || m.external_user_id) + '</b></td>' +
+          '<td>' + (m.external_email || '-') + '</td>' +
+          '<td>' + (m.agent_name || m.smartcs_agent_id || '-') + '</td>' +
+          '<td style="font-size:11px;color:#888">' + (m.provider_id || '-') + '</td>' +
+          '<td style="font-size:11px;color:#888">' + (m.last_login_at || '从未') + '</td>' +
+          '<td style="font-size:11px;color:#888">' + (m.created_at || '-') + '</td></tr>';
+      }
+      document.getElementById('authMappingTable').innerHTML = html;
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+// SW 注册
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(e) { console.log('SW reg fail', e); });
+}
+</script>
+
+<!-- ====== 审计日志 ====== -->
+<div class="admin-section" id="section-audit" style="display:none">
+  <div class="card">
+    <h2><i class="icon">📋</i> 审计日志</h2>
+    <p style="color:#666;font-size:13px;margin-bottom:12px">记录所有用户、客服、管理员的系统操作，便于追踪与审计。</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center">
+      <input type="text" id="auditFilterActor" placeholder="操作人ID" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;width:140px">
+      <input type="text" id="auditFilterAction" placeholder="操作类型" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;width:140px">
+      <input type="date" id="auditFilterStart" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      <span style="font-size:12px;color:#999">至</span>
+      <input type="date" id="auditFilterEnd" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      <button onclick="loadAuditLogs()" style="padding:6px 14px;background:#1a73e8;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">查询</button>
+    </div>
+    <div id="auditLogCount" style="font-size:12px;color:#888;margin-bottom:8px"></div>
+    <div style="overflow-x:auto">
+      <table id="auditTable" style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>
+          <th style="padding:8px 10px;border-bottom:2px solid #eee;text-align:left;white-space:nowrap">时间</th>
+          <th style="padding:8px 10px;border-bottom:2px solid #eee;text-align:left;white-space:nowrap">操作人</th>
+          <th style="padding:8px 10px;border-bottom:2px solid #eee;text-align:left;white-space:nowrap">操作类型</th>
+          <th style="padding:8px 10px;border-bottom:2px solid #eee;text-align:left">详情</th>
+        </tr></thead>
+        <tbody id="auditTableBody"><tr><td colspan="4" class="status-text">加载中...</td></tr></tbody>
+      </table>
+    </div>
+    <div id="auditPagination" style="display:flex;justify-content:center;gap:8px;margin-top:12px">
+      <button onclick="auditPrevPage()" id="auditPrevBtn" style="padding:6px 14px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:12px">← 上一页</button>
+      <span id="auditPageInfo" style="font-size:12px;color:#888;line-height:32px"></span>
+      <button onclick="auditNextPage()" id="auditNextBtn" style="padding:6px 14px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:12px">下一页 →</button>
+    </div>
+  </div>
+</div>
+<script>
+var auditPage = 1;
+function loadAuditLogs(page) {
+  auditPage = page || auditPage;
+  var p = document.getElementById('auditFilterActor').value;
+  var a = document.getElementById('auditFilterAction').value;
+  var s = document.getElementById('auditFilterStart').value;
+  var e = document.getElementById('auditFilterEnd').value;
+  var params = '?page=' + auditPage + '&per_page=50';
+  if (p) params += '&actor_id=' + encodeURIComponent(p);
+  if (a) params += '&action=' + encodeURIComponent(a);
+  if (s) params += '&start_date=' + s;
+  if (e) params += '&end_date=' + e;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/audit-logs' + params, true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      var tbody = document.getElementById('auditTableBody');
+      if (!d.logs || d.logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="status-text" style="text-align:center;padding:20px;color:#999">暂无审计记录</td></tr>';
+        document.getElementById('auditLogCount').textContent = '';
+        document.getElementById('auditPagination').style.display = 'none';
+        return;
+      }
+      var h = '';
+      for (var i = 0; i < d.logs.length; i++) {
+        var l = d.logs[i];
+        var detail = '';
+        try { var dd = JSON.parse(l.detail || '{}'); detail = Object.keys(dd).map(function(k){return k+':'+dd[k]}).join(', '); } catch(e) { detail = l.detail || ''; }
+        h += '<tr>' +
+          '<td style="padding:6px 10px;border-bottom:1px solid #f5f5f5;white-space:nowrap;color:#666">' + (l.created_at || '').substring(0, 19) + '</td>' +
+          '<td style="padding:6px 10px;border-bottom:1px solid #f5f5f5;white-space:nowrap">' + l.actor_name + ' <span style="color:#999;font-size:11px">(' + l.actor_id.substring(0,12) + ')</span></td>' +
+          '<td style="padding:6px 10px;border-bottom:1px solid #f5f5f5;white-space:nowrap"><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:#f0f4ff;color:#1a73e8">' + l.action + '</span></td>' +
+          '<td style="padding:6px 10px;border-bottom:1px solid #f5f5f5;color:#777;font-size:11px">' + detail + '</td></tr>';
+      }
+      tbody.innerHTML = h;
+      var totalPages = Math.ceil(d.total / d.per_page);
+      document.getElementById('auditLogCount').textContent = '共 ' + d.total + ' 条记录';
+      document.getElementById('auditPagination').style.display = 'flex';
+      document.getElementById('auditPageInfo').textContent = '第 ' + d.page + ' / ' + Math.max(totalPages, 1) + ' 页';
+      document.getElementById('auditPrevBtn').disabled = d.page <= 1;
+      document.getElementById('auditNextBtn').disabled = d.page >= totalPages;
+    } catch(e) { document.getElementById('auditTableBody').innerHTML = '<tr><td colspan="4" class="status-text" style="text-align:center;padding:20px;color:#d32f2f">加载失败</td></tr>'; }
+  };
+  xhr.onerror = function() { document.getElementById('auditTableBody').innerHTML = '<tr><td colspan="4" class="status-text" style="text-align:center;padding:20px;color:#d32f2f">网络异常</td></tr>'; };
+  xhr.send();
+}
+function auditPrevPage() { if (auditPage > 1) { auditPage--; loadAuditLogs(); } }
+function auditNextPage() { auditPage++; loadAuditLogs(); }
+</script>
+
+</body>
+</html>
