@@ -972,20 +972,6 @@ function loadCustomerAuth() {
   xhr.send();
 }
 
-function() {
-    try {
-      var data = JSON.parse(xhr.responseText);
-      if (data.logged_in) {
-        renderLoggedIn(el, data.customer);
-      } else {
-        renderLoginForm(el);
-      }
-    } catch(e) { renderLoginForm(el); }
-  };
-  xhr.onerror = function() { renderLoginForm(el); };
-  xhr.send();
-}
-
 function renderLoginForm(el) {
   el.innerHTML = '<div style="max-width:300px;margin:0 auto">' +
     '<p style="font-size:13px;color:#666;margin-bottom:12px">登录后可查看历史工单</p>' +
