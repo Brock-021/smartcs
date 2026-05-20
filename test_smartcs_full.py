@@ -666,7 +666,7 @@ class SmartCSTest:
     def test_no_session_access(self):
         """Access protected route without session"""
         r = self.api(self.user, '/api/admin/tickets', method='GET')
-        test('G3. 未授权访问被拒绝', r is None or r.get('error'), str(r)[:100])
+        test('G3. 未授权访问被拒绝', (isinstance(r, dict) and r.get('error')) or (isinstance(r, str) and 'login' in r), str(r)[:100])
 
     def test_404_page(self):
         """Access non-existent page"""

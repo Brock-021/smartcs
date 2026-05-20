@@ -3,7 +3,7 @@
 **版本：** v5.0  
 **最后更新：** 2026-05-20  
 **设计基准：** 每日 1,000 张工单  
-**部署地址：** `http://8.133.198.245:8080`  
+**部署地址：** `部署服务器`  
 **代码仓库：** `https://github.com/Brock-021/smartcs`  
 
 ---
@@ -1518,13 +1518,13 @@ service_tickets（主表）
 
 | 项目 | 值 |
 |------|------|
-| 服务器 | 8.133.198.245（阿里云 ECS） |
+| 服务器 | 生产服务器 |
 | 端口 | 8080（Nginx 反向代理） |
 | 部署路径 | `/home/deploy/smart-cs/` |
 | 数据库 | `/home/deploy/smart-cs/data/smartcs.db` |
 | 服务用户 | `deploy` |
 | 启动方式 | systemd: `smartcs.service` |
-| 管理后台 | `http://8.133.198.245:8080/admin/dashboard` |
+| 管理后台 | `部署服务器/admin/dashboard` |
 | 管理员账号 | `admin@smartcs.com` |
 | 管理员密码 | `admin123` |
 

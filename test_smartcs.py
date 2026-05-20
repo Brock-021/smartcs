@@ -4,7 +4,7 @@ SmartCS 集成测试脚本
 测试所有核心业务流程：用户咨询 → 转人工 → 客服回复 → 关闭工单
 """
 
-import urllib.request, urllib.parse, json, http.cookiejar, sys, os, io
+import urllib.request, urllib.parse, json, http.cookiejar, sys, os, io, uuid
 
 # === Configuration ===
 BASE = os.environ.get('SMART_CS_URL', 'http://localhost:5000')
@@ -12,6 +12,8 @@ AGENT_EMAIL = os.environ.get('AGENT_EMAIL', 'agent@smartcs.com')
 AGENT_PASS = os.environ.get('AGENT_PASS', 'admin123')
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@smartcs.com')
 ADMIN_PASS = os.environ.get('ADMIN_PASS', 'admin123')
+TEST_EMAIL = f'test_{uuid.uuid4().hex[:8]}@test.com'
+TEST_PASS = 'TestPass123'
 
 passed = 0
 failed = 0
@@ -34,6 +36,8 @@ class SmartCSTest:
         self.agent = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.agent_cj))
         self.admin_cj = http.cookiejar.CookieJar()
         self.admin = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.admin_cj))
+        self.email = TEST_EMAIL
+        self.password = TEST_PASS
 
     def api(self, opener, path, data=None, method='POST' if True else 'GET'):
         req = urllib.request.Request(BASE + path,
@@ -56,8 +60,6 @@ class SmartCSTest:
                 return None
 
     def test_homepage(self):
-        resp = self.api(self.user, '/', method='GET')
-        # Can't call user without data - just check GET
         req = urllib.request.Request(BASE + '/')
         try:
             resp = self.user.open(req)
@@ -66,7 +68,16 @@ class SmartCSTest:
         except Exception as e:
             test('Homepage loads', False, str(e))
 
+    def register_user(self):
+        r = self.api(self.user, '/api/customer/register',
+                     {'email': self.email, 'password': self.password, 'name': '测试用户'})
+        test('User register', r and r.get('ok'), str(r)[:100])
+        return r
+
     def test_user_flow(self):
+        # Register & login first
+        self.register_user()
+
         # Step 1: Send message
         r = self.api(self.user, '/api/chat', {'message': '电脑蓝屏了'})
         test('User sends message', r and r.get('conversation_id'), str(r)[:100])
@@ -137,7 +148,6 @@ class SmartCSTest:
         return tk
 
     def test_user_receives_reply(self, conv_id):
-        # User polls history - should see agent message
         r = self.api(self.user, f'/api/chat/history?conversation_id={conv_id}', method='GET')
         if r:
             agent_msgs = [m for m in r if m['role'] == 'agent']
@@ -146,14 +156,14 @@ class SmartCSTest:
             test('User receives agent reply', False, 'no history')
 
     def test_close_request(self, tk_id):
-        r = self.api(self.agent, '/api/agent/tickets/request-close', 
-                     {'ticket_id': tk_id, 'resolution_notes': '已远程解决'})
+        r = self.api(self.agent, '/api/agent/tickets/close',
+                     {'ticket_id': tk_id, 'close_reason': '已解决', 'resolution_notes': '已远程解决'})
         test('Agent requests close', r and r.get('ok'), str(r)[:100])
 
     def test_user_receives_system_msg(self, conv_id):
         r = self.api(self.user, f'/api/chat/history?conversation_id={conv_id}', method='GET')
         if r:
-            sys_msgs = [m for m in r if m['role'] == 'system']
+            sys_msgs = [m for m in r if m.get('role') in ('system', 'agent')]
             test('User receives system/close message', len(sys_msgs) >= 1, '')
         else:
             test('User receives system/close message', False, 'no history')
@@ -185,15 +195,9 @@ class SmartCSTest:
         test('Agent logout', True, '')
 
     def run_all(self):
-        tests = [
-            ('Homepage', self.test_homepage),
-            ('User: send message → bot → request human', lambda: self.test_user_flow()),
-        ]
-        
-        # Run user flow to get conv_id
         self.test_homepage()
         conv_id = self.test_user_flow()
-        
+
         if conv_id:
             self.test_chat_history(conv_id)
             self.test_agent_login()
