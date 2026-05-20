@@ -1296,8 +1296,8 @@ def chat():
             db.execute("INSERT INTO service_tickets(id,escalation_id,conversation_id,customer_id,issue_description,ticket_number) VALUES(?,?,?,?,?,?)",
                        (gen_id('tk-'), esc_id, conv_id, cid, msg[:200], generate_ticket_number()))
         else:
-            db.execute("UPDATE service_tickets SET issue_description=issue_description || '; ' || ?, updated_at=datetime('now','localtime') WHERE id=?", (msg[:200], existing['id']))
-        db.execute("UPDATE conversations SET status='escalated',updated_at=datetime('now','localtime') WHERE id=?", (conv_id,))
+            get_db().execute("UPDATE service_tickets SET issue_description=issue_description || '; ' || ?, updated_at=datetime('now','localtime') WHERE id=?", (msg[:200], existing['id']))
+        get_db().execute("UPDATE conversations SET status='escalated',updated_at=datetime('now','localtime') WHERE id=?", (conv_id,))
         db.commit()
         return jsonify({'reply':'✅ 已为您转接人工客服，请稍候...','escalated':True,'conversation_id':conv_id})
 
@@ -1508,24 +1508,16 @@ def customer_tickets():
 def customer_confirm():
     data = request.get_json()
     tk_id = data.get('ticket_id','')
-    t2 = get_db().execute("SELECT agent_id, conversation_id FROM service_tickets WHERE id=?", (tk_id,)).fetchone()
-    has_agent = t2 and t2['agent_id'] and t2['agent_id'].strip() != ''
-    new_status = 'confirmed' if has_agent else 'resolved'
-    get_db().execute("UPDATE service_tickets SET status=?,confirmed_at=datetime('now','localtime'),updated_at=datetime('now','localtime') WHERE id=?", (new_status, tk_id))
-    if not has_agent:
-        get_db().execute("UPDATE conversations SET status='resolved' WHERE id=(SELECT conversation_id FROM service_tickets WHERE id=?)", (tk_id,))
-    conv = t2 or get_db().execute("SELECT conversation_id FROM service_tickets WHERE id=?", (tk_id,)).fetchone()
+    get_db().execute("UPDATE service_tickets SET status='closed',close_reason='客户确认后自动关闭',closed_at=datetime('now','localtime'),updated_at=datetime('now','localtime') WHERE id=?", (tk_id,))
+    get_db().execute("UPDATE conversations SET status='resolved',updated_at=datetime('now','localtime') WHERE id=(SELECT conversation_id FROM service_tickets WHERE id=?)", (tk_id,))
+    conv = get_db().execute("SELECT conversation_id FROM service_tickets WHERE id=?", (tk_id,)).fetchone()
     if conv:
-        if has_agent:
-            msg = '✅ 客户已确认问题已解决，请客服进行最终关闭操作。'
-        else:
-            msg = '✅ 客户已确认问题已解决，工单已关闭。'
+        msg = '✅ 客户已确认问题已解决，工单已自动关闭。'
         get_db().execute("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)",
                          (gen_id('msg-'), conv['conversation_id'], 'system', msg))
         get_db().execute("UPDATE conversations SET updated_at=datetime('now','localtime') WHERE id=?", (conv['conversation_id'],))
     get_db().commit()
-    log_audit(tk_id, f'ticket.{new_status}', session.get('customer_id',''), '客户',
-              {'action': 'confirm', 'new_status': new_status})
+    log_audit(tk_id, 'ticket.closed', session.get('customer_id',''), '客户', {'action': 'confirm', 'status': 'closed'})
     return jsonify({'ok':True})
 
 @app.route('/api/customer/tickets/rate', methods=['POST'])
@@ -1536,26 +1528,19 @@ def customer_rate():
     feedback = data.get('feedback','')
     db = get_db()
     t2 = db.execute("SELECT agent_id, conversation_id FROM service_tickets WHERE id=?", (tk_id,)).fetchone()
-    has_agent = t2 and t2['agent_id'] and t2['agent_id'].strip() != ''
-    new_status = 'confirmed' if has_agent else 'resolved'
-    db.execute("UPDATE service_tickets SET status=?,customer_rating=?,customer_feedback=?,updated_at=datetime('now','localtime') WHERE id=?", 
-               (new_status, rating, feedback, tk_id))
-    if not has_agent:
-        db.execute("UPDATE conversations SET status='resolved' WHERE id=(SELECT conversation_id FROM service_tickets WHERE id=?)", (tk_id,))
+    db.execute("UPDATE service_tickets SET status='closed',customer_rating=?,customer_feedback=?,close_reason='客户评价后自动关闭',closed_at=datetime('now','localtime'),updated_at=datetime('now','localtime') WHERE id=?", (rating, feedback, tk_id))
+    db.execute("UPDATE conversations SET status='resolved',updated_at=datetime('now','localtime') WHERE id=(SELECT conversation_id FROM service_tickets WHERE id=?)", (tk_id,))
     conv = t2 or db.execute("SELECT conversation_id FROM service_tickets WHERE id=?", (tk_id,)).fetchone()
     if conv:
         stars = '⭐' * rating + '☆' * (5 - rating)
         fb = (' 反馈：' + feedback) if feedback else ''
         detail = f'{stars}/5' + fb
-        if has_agent:
-            msg = '✅ 客户已评价，' + detail + '\n请客服进行最终关闭操作。'
-        else:
-            msg = f'✅ 客户已评价，{detail}'
+        msg = '✅ 客户已评价，' + detail + '，工单已自动关闭。'
         db.execute("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)",
                          (gen_id('msg-'), conv['conversation_id'], 'system', msg))
         db.execute("UPDATE conversations SET updated_at=datetime('now','localtime') WHERE id=?", (conv['conversation_id'],))
     db.commit()
-    log_audit(tk_id, f'ticket.{new_status}', session.get('customer_id',''), '客户',
+    log_audit(tk_id, 'ticket.closed', session.get('customer_id',''), '客户',
               {'action': 'rate', 'rating': rating, 'feedback': feedback[:100] if feedback else ''})
     return jsonify({'ok':True})
 
@@ -1610,19 +1595,15 @@ def customer_selfclose():
     if not t: return jsonify({'error':'工单不存在'}),404
     t2 = db.execute("SELECT agent_id, conversation_id FROM service_tickets WHERE id=?", (tk_id,)).fetchone()
     has_agent = t2 and t2['agent_id'] and t2['agent_id'].strip() != ''
-    new_status = 'confirmed' if has_agent else 'resolved'
-    db.execute("UPDATE service_tickets SET status=?,customer_rating=?,customer_feedback=?,confirmed_at=datetime('now','localtime'),updated_at=datetime('now','localtime') WHERE id=?", (new_status, rating, feedback, tk_id))
-    if not has_agent:
-        db.execute("UPDATE conversations SET status='resolved' WHERE id=(SELECT conversation_id FROM service_tickets WHERE id=?)", (tk_id,))
+    # Auto-close: customer rating = final close
+    db.execute("UPDATE service_tickets SET status='closed',customer_rating=?,customer_feedback=?,close_reason='客户评价后自动关闭',closed_at=datetime('now','localtime'),updated_at=datetime('now','localtime') WHERE id=?", (rating, feedback, tk_id))
+    db.execute("UPDATE conversations SET status='resolved',updated_at=datetime('now','localtime') WHERE id=(SELECT conversation_id FROM service_tickets WHERE id=?)", (tk_id,))
     conv = t2 or db.execute("SELECT conversation_id FROM service_tickets WHERE id=?", (tk_id,)).fetchone()
     if conv:
         stars = '⭐' * rating + '☆' * (5 - rating)
         fb = (' 📝 反馈：' + feedback) if feedback else ''
         detail = f'{stars}/5' + fb
-        if has_agent:
-            msg = f'✅ 客户已确认关闭工单，评价 {detail}\n请客服进行最终关闭操作。'
-        else:
-            msg = f'✅ 客户已自行关闭工单，评价 {detail}'
+        msg = f'✅ 工单已关闭，客户评价 {detail}'
         db.execute("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)",
                          (gen_id('msg-'), conv['conversation_id'], 'system', msg))
         db.execute("UPDATE conversations SET updated_at=datetime('now','localtime') WHERE id=?", (conv['conversation_id'],))
