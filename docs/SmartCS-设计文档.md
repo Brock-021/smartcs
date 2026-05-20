@@ -843,6 +843,125 @@ UPDATE service_tickets SET status = 'closed'     WHERE status IN ('resolved', 'c
 
 ---
 
+## 6.5 三员管理设计
+
+### 6.5.1 角色字段扩展
+
+`agents.role` 字段为唯一权限来源，扩展支持以下值：
+
+```sql
+-- agents 表 role 字段 CHECK 约束
+role TEXT CHECK(role IN ('agent', 'sysadmin', 'secadmin', 'audadmin', 'superadmin'))
+```
+
+| 值 | 说明 | 来源 |
+|------|------|------|
+| `agent` | 普通客服 | 原有 |
+| `sysadmin` | 系统管理员 | 新增 |
+| `secadmin` | 安全管理员 | 新增 |
+| `audadmin` | 审计管理员 | 新增 |
+| `superadmin` | 兼容角色（迁移过渡） | 从 `admin` 迁移 |
+
+迁移：`UPDATE agents SET role='superadmin' WHERE role='admin'`
+
+### 6.5.2 装饰器工厂模式
+
+```python
+def role_required(*allowed_roles):
+    """统一角色装饰器工厂"""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if not session.get('agent_id'):
+                if request.is_json:
+                    return jsonify({'error': '未登录'}), 401
+                return redirect('/agent/login')
+            role = session.get('agent_role')
+            if role == 'superadmin':  # 兼容角色
+                return f(*args, **kwargs)
+            if role not in allowed_roles:
+                return jsonify({'error': '权限不足'}), 403
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
+sysadmin_required = role_required('sysadmin', 'superadmin')
+secadmin_required = role_required('secadmin', 'superadmin')
+audadmin_required = role_required('audadmin', 'superadmin')
+logged_in_required = role_required('agent', 'sysadmin', 'secadmin', 'audadmin', 'superadmin')
+```
+
+`session['agent_role']` 在 `agent_login` 时从 `agents.role` 读取并存入 session。
+
+### 6.5.3 路由权限映射
+
+| 路由 | 装饰器 |
+|------|--------|
+| 用户管理 CRUD | `@sysadmin_required` |
+| 客服管理 CRUD（增/改） | `@sysadmin_required` |
+| 客服删除 | `@secadmin_required` |
+| 修改客服级别 | `@sysadmin_required` |
+| 系统配置（API/模型） | `@sysadmin_required` |
+| 安全配置（密码策略/登录限制） | `@secadmin_required` |
+| 认证提供者管理 | `@secadmin_required` |
+| 审计日志查看 | `@audadmin_required` |
+| 登录日志查看 | `@audadmin_required` |
+| 工单管理 CRUD | `@sysadmin_required` |
+| 强制关闭工单 | `@sysadmin_required` |
+| 工单导出/归档 | `@sysadmin_required` |
+| 关闭原因管理 | `@sysadmin_required` |
+| 升级记录管理 | `@sysadmin_required` |
+| 负责系统管理 | `@sysadmin_required` |
+| IM/外部适配器 | `@sysadmin_required` |
+| Webhook 管理 | `@sysadmin_required` |
+| SSL 证书 | `@sysadmin_required` |
+| 知识库管理 | `@sysadmin_required` |
+| 知识审批/驳回 | `@sysadmin_required` |
+| 数据分析 | `@logged_in_required` |
+| 数据统计 | `@logged_in_required` |
+| 仪表盘 | `@logged_in_required`（按角色渲染不同视图） |
+| 工单备注 | `@sysadmin_required` |
+| 工单详情 | `@logged_in_required` |
+| 工单转交 | `@logged_in_required` |
+
+### 6.5.4 前端导航角色化渲染
+
+管理后台导航栏根据当前用户角色动态显示：
+
+| 角色 | 导航标签 |
+|------|---------|
+| `sysadmin` / `superadmin` | 工单管理, 数据统计, 用户管理, 客服管理, 系统配置, 关闭原因, 升级记录, 负责系统, 集成网关, 数据分析, 知识库, 认证管理 |
+| `secadmin` | 认证管理, 安全策略, 登录日志 |
+| `audadmin` | 审计日志, 登录日志, 数据统计, 数据分析 |
+
+通过 JS 变量 `currentUserRole` 控制显示/隐藏，后端返回 `GET /api/admin/users/me` 或通过 HTML 模板渲染时注入。
+
+### 6.5.5 API 拆分：系统配置 → config + security-config
+
+原来的 `/api/admin/config` 拆分为两个端点：
+
+| 端点 | 装饰器 | 管理字段 |
+|------|--------|---------|
+| `GET/POST /api/admin/config` | `@sysadmin_required` | api_key, api_base_url, model_name, webhook_timeout, auto_close_min, auto_rate_hours, ticket_search_max_days, level_names |
+| `GET/POST /api/admin/security-config` | `@secadmin_required` | password_min_length, password_require_upper, password_expire_days, login_max_attempts, login_lockout_minutes, audit_log_retention_days |
+
+删除 `admin_password` 字段，密码修改走独立 API。
+
+### 6.5.6 新增表字段
+
+```sql
+-- agents 表新增
+ALTER TABLE agents ADD COLUMN password_changed_at TEXT DEFAULT '';
+
+-- system_config 新增安全配置键
+password_min_length      '8'
+password_require_upper   'true'
+password_expire_days     '90'
+login_max_attempts       '5'
+login_lockout_minutes    '15'
+audit_log_retention_days '365'
+```
+
 ## 七、安全设计
 
 ### 7.1 认证方案（分阶段）

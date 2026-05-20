@@ -148,20 +148,20 @@ table tr.cursor-pointer{cursor:pointer}
   </div>
 </div>
 <div class="nav-tabs" id="navTabs">
-  <div class="tab active" id="tabTickets" onclick="switchPage('tickets',this)">📋 工单管理 <span class="count" id="openCount">0</span></div>
-  <div class="tab" id="tabStats" onclick="switchPage('stats',this)">📊 数据统计</div>
-  <div class="tab" id="tabUsers" onclick="switchPage('users',this)">👥 用户管理</div>
-  <div class="tab" id="tabAgents" onclick="switchPage('agents',this)">👤 客服管理</div>
-  <div class="tab" id="tabConfig" onclick="switchPage('config',this)">⚙️ 系统配置</div>
-  <div class="tab" id="tabReasons" onclick="switchPage('reasons',this)">🏷️ 关闭原因</div>
-  <div class="tab" id="tabUpgrades" onclick="switchPage('upgrades',this)">📋 系统升级记录</div>
-  <div class="tab" id="tabSystems" onclick="switchPage('systems',this)">🔧 负责系统</div>
-  <div class="tab" id="tabWebhooks" onclick="switchPage('webhooks',this)">🔗 集成网关</div>
-  <div class="tab" id="tabAnalytics" onclick="switchPage('analytics',this)">📊 数据分析</div>
-  <div class="tab" id="tabKnowledge" onclick="switchPage('knowledge',this)">📚 知识库</div>
-  <div class="tab" id="tabLoginLogs" onclick="switchPage('loginlogs',this)">🔑 登录日志</div>
-  <div class="tab" id="tabAuth" onclick="switchPage('auth',this)">🔐 认证管理</div>
-  <div class="tab" id="tabAudit" onclick="switchPage('audit',this)">📋 审计日志</div>
+  <div class="tab active" id="tabTickets" data-page="tickets" onclick="switchPage('tickets',this)">📋 工单管理 <span class="count" id="openCount">0</span></div>
+  <div class="tab" id="tabStats" data-page="stats" onclick="switchPage('stats',this)">📊 数据统计</div>
+  <div class="tab" id="tabUsers" data-page="users" onclick="switchPage('users',this)">👥 用户管理</div>
+  <div class="tab" id="tabAgents" data-page="agents" onclick="switchPage('agents',this)">👤 客服管理</div>
+  <div class="tab" id="tabConfig" data-page="config" onclick="switchPage('config',this)">⚙️ 系统配置</div>
+  <div class="tab" id="tabReasons" data-page="reasons" onclick="switchPage('reasons',this)">🏷️ 关闭原因</div>
+  <div class="tab" id="tabUpgrades" data-page="upgrades" onclick="switchPage('upgrades',this)">📋 系统升级记录</div>
+  <div class="tab" id="tabSystems" data-page="systems" onclick="switchPage('systems',this)">🔧 负责系统</div>
+  <div class="tab" id="tabWebhooks" data-page="webhooks" onclick="switchPage('webhooks',this)">🔗 集成网关</div>
+  <div class="tab" id="tabAnalytics" data-page="analytics" onclick="switchPage('analytics',this)">📊 数据分析</div>
+  <div class="tab" id="tabKnowledge" data-page="knowledge" onclick="switchPage('knowledge',this)">📚 知识库</div>
+  <div class="tab" id="tabLoginLogs" data-page="loginlogs" onclick="switchPage('loginlogs',this)">🔑 登录日志</div>
+  <div class="tab" id="tabAuth" data-page="auth" onclick="switchPage('auth',this)">🔐 认证管理</div>
+  <div class="tab" id="tabAudit" data-page="audit" onclick="switchPage('audit',this)">📋 审计日志</div>
 </div>
 
 <div class="content active" id="pageTickets">
@@ -803,9 +803,42 @@ table tr.cursor-pointer{cursor:pointer}
 
 <script>
 var currentPage = 'tickets';
+var currentUserRole = '{{ agent_role }}' || '';
+
+// 角色权限控制：仅保留当前角色可访问的标签
+var roleTabMapping = {
+  'sysadmin':  ['tickets','stats','users','agents','config','reasons','upgrades','systems','webhooks','analytics','knowledge','auth'],
+  'superadmin': ['tickets','stats','users','agents','config','reasons','upgrades','systems','webhooks','analytics','knowledge','auth','loginlogs','audit'],
+  'secadmin':   ['auth','loginlogs'],
+  'audadmin':   ['audit','loginlogs','stats','analytics'],
+};
+
+function getRoleTabs() {
+  var role = currentUserRole;
+  if (roleTabMapping[role]) return roleTabMapping[role];
+  // Default: show all for backward compatibility
+  return ['tickets','stats','users','agents','config','reasons','upgrades','systems','webhooks','analytics','knowledge','auth','loginlogs','audit'];
+}
+
+function applyRoleBasedNav() {
+  var allowedTabs = getRoleTabs();
+  document.querySelectorAll('.nav-tabs .tab').forEach(function(tab) {
+    var page = tab.getAttribute('data-page');
+    if (!page) {
+      // Extract page name from onclick attribute
+      var onclick = tab.getAttribute('onclick') || '';
+      var match = onclick.match(/switchPage\('([^']+)'/);
+      if (match) page = match[1];
+    }
+    if (page && allowedTabs.indexOf(page) === -1) {
+      tab.style.display = 'none';
+    }
+  });
+}
 
 // Preload level names cache
 setTimeout(function() { loadLevelNamesCache(); }, 100);
+setTimeout(function() { applyRoleBasedNav(); }, 50);
 
 function switchPage(page, el) {
   currentPage = page;

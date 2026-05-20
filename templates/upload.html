@@ -43,8 +43,6 @@
         .btn-sm:hover { opacity: 0.8; }
         .btn-edit { background: #e8f0fe; color: #1a73e8; }
         .btn-delete { background: #fce8e6; color: #d93025; }
-
-        /* 编辑弹窗 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal.show { display: flex; }
         .modal-content { background: white; border-radius: 12px; padding: 24px; width: 90%; max-width: 700px; max-height: 85vh; display: flex; flex-direction: column; }
@@ -56,7 +54,6 @@
         .btn-save { background: #667eea; color: white; }
         .btn-cancel { background: #f5f5f5; color: #666; }
         .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
-
         .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; font-size: 14px; z-index: 2000; animation: slideIn 0.3s ease; display: none; }
         @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .toast.success { background: #28a745; }
@@ -67,16 +64,9 @@
     <div class="header">
         <div class="avatar">📚</div>
         <h1>知识库管理</h1>
-        <a href="/" class="nav-link">💬 回到客服</a>
+        <a href="/admin/dashboard" class="nav-link">⚙️ 返回管理后台</a>
     </div>
     <div class="container">
-        <div class="card" id="loginCard">
-            <h2>🔐 管理员验证</h2>
-            <div class="password-area" id="passwordArea">
-                <input type="password" id="passwordInput" placeholder="请输入管理员密码..." onkeydown="if(event.key==='Enter')verifyPassword()">
-                <button onclick="verifyPassword()" id="verifyBtn">验证</button>
-            </div>
-        </div>
         <div class="card" id="uploadCard" style="display:none;">
             <h2>📤 上传文件</h2>
             <div class="drop-zone" id="dropZone">
@@ -93,7 +83,6 @@
         </div>
     </div>
 
-    <!-- 编辑弹窗 -->
     <div class="modal" id="editModal">
         <div class="modal-content">
             <h3>✏️ 编辑文档: <span id="editFilename" style="font-weight:normal;"></span></h3>
@@ -105,11 +94,9 @@
         </div>
     </div>
 
-    <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <script>
-        let adminPassword = '';
         let currentEditFile = '';
 
         function showToast(msg, type) {
@@ -120,31 +107,24 @@
             setTimeout(() => t.style.display = 'none', 3000);
         }
 
-        async function verifyPassword() {
-            const pwd = document.getElementById('passwordInput').value.trim();
-            if (!pwd) return;
-            const btn = document.getElementById('verifyBtn');
-            btn.disabled = true;
-            btn.textContent = '验证中...';
+        async function init() {
             try {
-                const resp = await fetch('/api/knowledge/list?password=' + encodeURIComponent(pwd));
-                const data = await resp.json();
-                if (resp.status === 403 || data.error) {
-                    alert('密码错误，请重试');
-                    btn.disabled = false;
-                    btn.textContent = '验证';
+                const resp = await fetch('/api/knowledge/list');
+                if (resp.status === 401) {
+                    window.location.href = '/agent/login';
                     return;
                 }
-                adminPassword = pwd;
-                document.getElementById('loginCard').style.display = 'none';
+                if (resp.status === 403) {
+                    document.body.innerHTML = '<div style="text-align:center;padding:100px 20px;color:#d32f2f;font-size:18px">⛔ 权限不足，请使用系统管理员账号登录</div>';
+                    return;
+                }
+                const data = await resp.json();
                 document.getElementById('uploadCard').style.display = 'block';
                 document.getElementById('knowledgeCard').style.display = 'block';
                 initUpload();
                 renderList(data);
             } catch (err) {
-                alert('验证失败，请重试');
-                btn.disabled = false;
-                btn.textContent = '验证';
+                document.getElementById('knowledgeList').innerHTML = '<p style="color:#dc3545;text-align:center;padding:20px;">验证失败</p>';
             }
         }
 
@@ -171,7 +151,6 @@
                     fileList.appendChild(item);
                     const formData = new FormData();
                     formData.append('file', file);
-                    formData.append('password', adminPassword);
                     try {
                         const resp = await fetch('/api/upload', { method: 'POST', body: formData });
                         const data = await resp.json();
@@ -179,7 +158,7 @@
                             item.querySelector('.status').textContent = '✅ ' + data.message;
                             item.querySelector('.status').classList.add('success');
                         } else {
-                            item.querySelector('.status').textContent = '❌ ' + data.error;
+                            item.querySelector('.status').textContent = '❌ ' + (data.error || '上传失败');
                             item.querySelector('.status').classList.add('error');
                         }
                     } catch (err) {
@@ -193,7 +172,7 @@
 
         async function loadKnowledge() {
             try {
-                const resp = await fetch('/api/knowledge/list?password=' + encodeURIComponent(adminPassword));
+                const resp = await fetch('/api/knowledge/list');
                 const files = await resp.json();
                 renderList(files);
             } catch (err) {
@@ -227,9 +206,8 @@
             document.getElementById('editContent').value = '加载中...';
             document.getElementById('editModal').classList.add('show');
             document.getElementById('saveBtn').disabled = false;
-
             try {
-                const resp = await fetch('/api/knowledge/detail?password=' + encodeURIComponent(adminPassword) + '&filename=' + encodeURIComponent(filename));
+                const resp = await fetch('/api/knowledge/detail?filename=' + encodeURIComponent(filename));
                 const data = await resp.json();
                 if (data.content !== undefined) {
                     document.getElementById('editContent').value = data.content;
@@ -255,18 +233,17 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        password: adminPassword,
                         filename: currentEditFile,
                         content: document.getElementById('editContent').value
                     })
                 });
                 const data = await resp.json();
                 if (data.success) {
-                    showToast('✅ ' + data.message, 'success');
+                    showToast('✅ 保存成功', 'success');
                     closeEdit();
                     loadKnowledge();
                 } else {
-                    showToast('❌ ' + data.error, 'error');
+                    showToast('❌ ' + (data.error || '保存失败'), 'error');
                 }
             } catch (err) {
                 showToast('❌ 保存失败', 'error');
@@ -280,21 +257,21 @@
             fetch('/api/knowledge/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: adminPassword, filename: filename })
+                body: JSON.stringify({ filename: filename })
             })
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    showToast('✅ ' + data.message, 'success');
+                    showToast('✅ 删除成功', 'success');
                     loadKnowledge();
                 } else {
-                    showToast('❌ ' + data.error, 'error');
+                    showToast('❌ ' + (data.error || '删除失败'), 'error');
                 }
             })
             .catch(() => showToast('❌ 删除失败', 'error'));
         }
 
-        document.getElementById('passwordInput').focus();
+        init();
     </script>
 </body>
 </html>

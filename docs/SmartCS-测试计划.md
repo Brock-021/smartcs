@@ -233,6 +233,21 @@
 
 ---
 
+### 3.14 M 组 — 三员管理（10项）
+
+| ID | 需求参考 | 描述 | 前置条件 | 步骤 | 期望结果 |
+|----|---------|------|---------|------|---------|
+| M1 | 11.2 | 系统管理员登录可用 | 三员账号存在 | 用 sysadmin@smartcs.com 登录 POST /agent/login | ok=true, role=sysadmin, redirect=/admin/dashboard |
+| M2 | 11.2 | 安全管理员登录可用 | 三员账号存在 | 用 secadmin@smartcs.com 登录 POST /agent/login | ok=true, role=secadmin, redirect=/admin/dashboard |
+| M3 | 11.2 | 审计管理员登录可用 | 三员账号存在 | 用 audadmin@smartcs.com 登录 POST /agent/login | ok=true, role=audadmin, redirect=/admin/dashboard |
+| M4 | 11.2 | 权限边界：系统管理员不能查看审计日志 | sysadmin 已登录 | GET /api/admin/audit-logs | 返回 403 权限不足 |
+| M5 | 11.2 | 权限边界：安全管理员不能查看审计日志 | secadmin 已登录 | GET /api/admin/audit-logs | 返回 403 权限不足 |
+| M6 | 11.2 | 权限边界：审计管理员不能删除客服 | audadmin 已登录 | DELETE /api/admin/agents/{aid} | 返回 403 权限不足 |
+| M7 | 11.2 | 权限边界：系统管理员不能删除客服（归属安全管理员） | sysadmin 已登录 | DELETE /api/admin/agents/{aid} | 返回 403 权限不足 |
+| M8 | 11.3 | 权限边界：安全管理员可以删除客服 | secadmin 已登录 | DELETE /api/admin/agents/{aid} | 正常返回 |
+| M9 | 11.3 | 删除保护：不能删除最后一位安全管理员 | secadmin 只剩最后一人 | DELETE 最后一位 secadmin | 返回错误提示 |
+| M10 | 11.3 | 互斥约束：客服不可拥有两个角色 | 数据库层面 | agents.role 是单值字段 | CHECK 约束确保单一值 |
+
 ## 4. 测试策略
 
 ### 4.1 自动化测试

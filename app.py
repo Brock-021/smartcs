@@ -51,32 +51,78 @@ def get_db():
         g.db.execute("PRAGMA foreign_keys=ON")
     return g.db
 
-# ====== 认证装饰器 ======
-def agent_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get('agent_id'):
-            if request.is_json: return jsonify({'error':'未登录','login_required':True}),401
-            return redirect('/agent/login')
-        return f(*args, **kwargs)
-    return decorated
+# ====== 统一角色装饰器工厂 ======
+def role_required(*allowed_roles):
+    """Unified role decorator factory - 三员管理核心"""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if not session.get('agent_id'):
+                if request.is_json:
+                    return jsonify({'error':'未登录','login_required':True}), 401
+                return redirect('/agent/login')
+            role = session.get('agent_role', '')
+            if role == 'superadmin':  # 兼容角色
+                return f(*args, **kwargs)
+            if role not in allowed_roles:
+                return jsonify({'error':'权限不足'}), 403
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
 
-def admin_or_agent_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get('agent_id'):
-            if request.is_json: return jsonify({'error':'未登录','login_required':True}),401
-            return redirect('/agent/login')
-        return f(*args, **kwargs)
-    return decorated
+sysadmin_required = role_required('sysadmin', 'superadmin')
+secadmin_required = role_required('secadmin', 'superadmin')
+audadmin_required = role_required('audadmin', 'superadmin')
+logged_in_required = role_required('agent', 'sysadmin', 'secadmin', 'audadmin', 'superadmin')
 
-def admin_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get('agent_id') or session.get('agent_role') != 'admin':
-            return jsonify({'error':'需要管理员权限'}),403
-        return f(*args, **kwargs)
-    return decorated
+agent_required = logged_in_required  # backward compatibility
+admin_or_agent_required = logged_in_required  # backward compatibility
+
+admin_required = role_required('sysadmin', 'superadmin')  # backward compat - now same as sysadmin
+
+# ====== 密码策略辅助函数 ======
+def _check_password_policy(password):
+    """Check password against system_config policy. Returns (ok, error_msg)"""
+    if not password:
+        return False, '密码不能为空'
+    cfg = get_db().execute("SELECT key, value FROM system_config").fetchall()
+    config_dict = {r['key']: r['value'] for r in cfg}
+    min_len = int(config_dict.get('password_min_length', '8'))
+    req_upper = config_dict.get('password_require_upper', 'true') == 'true'
+    if len(password) < min_len:
+        return False, f'密码长度不能少于{min_len}位'
+    if req_upper and not re.search(r'[A-Z]', password):
+        return False, '密码必须包含大写字母'
+    return True, ''
+
+def _check_delete_agent_protection(aid):
+    """Check if agent can be deleted. Returns (ok, error_msg)"""
+    role = get_db().execute("SELECT role FROM agents WHERE id=?", (aid,)).fetchone()
+    if not role:
+        return True, ''
+    admin_roles = {'sysadmin', 'secadmin', 'audadmin'}
+    if role['role'] not in admin_roles:
+        return True, ''
+    # Check if this is the last of this role
+    count = get_db().execute("SELECT COUNT(*) FROM agents WHERE role=?", (role['role'],)).fetchone()[0]
+    if count <= 1:
+        role_names = {'sysadmin': '系统管理员', 'secadmin': '安全管理员', 'audadmin': '审计管理员'}
+        return False, f'不能删除最后一位{role_names.get(role["role"], role["role"])}'
+    return True, ''
+
+def _check_demote_agent_protection(aid):
+    """Check if agent can be demoted from admin role"""
+    role = get_db().execute("SELECT role FROM agents WHERE id=?", (aid,)).fetchone()
+    if not role:
+        return True, ''
+    admin_roles = {'sysadmin', 'secadmin', 'audadmin'}
+    if role['role'] not in admin_roles:
+        return True, ''
+    count = get_db().execute("SELECT COUNT(*) FROM agents WHERE role=?", (role['role'],)).fetchone()[0]
+    if count <= 1:
+        role_names = {'sysadmin': '系统管理员', 'secadmin': '安全管理员', 'audadmin': '审计管理员'}
+        return False, f'不能降级最后一位{role_names.get(role["role"], role["role"])}'
+    return True, ''
 
 def generate_csrf_token():
     if 'csrf_token' not in session:
@@ -1026,9 +1072,32 @@ def init_db():
         for d in idx_defs:
             try: db.execute(d)
             except: pass
+        # === 三员管理：迁移管理员到 superadmin ===
+        try:
+            db.execute("UPDATE agents SET role='superadmin' WHERE role='admin'")
+        except: pass
+        try:
+            db.execute("ALTER TABLE agents ADD COLUMN password_changed_at TEXT DEFAULT ''")
+        except: pass
+        
+        # === 三员管理：创建默认三员账号 ===
+        three_roles = [
+            ('sysadmin', '系统管理员', 'sysadmin@smartcs.com', generate_password_hash('SysAdmin@2026')),
+            ('secadmin', '安全管理员', 'secadmin@smartcs.com', generate_password_hash('SecAdmin@2026')),
+            ('audadmin', '审计管理员', 'audadmin@smartcs.com', generate_password_hash('AudAdmin@2026')),
+        ]
+        for trole, tname, temail, tpwhash in three_roles:
+            existing = db.execute("SELECT id FROM agents WHERE email=?", (temail,)).fetchone()
+            if not existing:
+                taid = 'agent-' + uuid.uuid4().hex[:12]
+                db.execute("INSERT INTO agents(id,name,email,password_hash,role) VALUES(?,?,?,?,?)",
+                          (taid, tname, temail, tpwhash, trole))
+                db.execute("INSERT INTO agent_profiles(id,agent_id,display_name,agent_level) VALUES(?,?,?,?)",
+                          ('ap-' + uuid.uuid4().hex[:12], taid, tname, 1))
+        
         pwd_hash = hashlib.sha256(f'admin:{ADMIN_PASSWORD}'.encode()).hexdigest()
         db.execute("INSERT OR IGNORE INTO agents(id,name,email,password_hash,role) VALUES(?,?,?,?,?)",
-                   ('admin-001', '管理员', 'admin@smartcs.com', pwd_hash, 'admin'))
+                   ('admin-001', '管理员', 'admin@smartcs.com', pwd_hash, 'superadmin'))
         db.execute("INSERT OR IGNORE INTO agents(id,name,email,password_hash,role) VALUES(?,?,?,?,?)",
                    ('agent-001', '客服01', 'agent@smartcs.com', pwd_hash, 'agent'))
         for _lvl_id, _lvl_name, _lvl_email, _lvl_level, _lvl_display, _lvl_title in [
@@ -1050,6 +1119,17 @@ def init_db():
         default_cfg = {'api_base_url':API_BASE_URL,'api_key':DASHSCOPE_API_KEY or '','model_name':MODEL_NAME,'admin_password':ADMIN_PASSWORD,'webhook_timeout':'10','auto_close_min':'20','auto_rate_hours':'24','ticket_search_max_days':'365',
                        'level_names': json.dumps({'1':'初级工程师','2':'高级工程师','3':'专家工程师','4':'首席工程师'}, ensure_ascii=False)}
         for k, v in default_cfg.items():
+            db.execute("INSERT OR IGNORE INTO system_config(key,value) VALUES(?,?)", (k, v))
+        # 安全配置键
+        security_cfg = [
+            ('password_min_length', '8'),
+            ('password_require_upper', 'true'),
+            ('password_expire_days', '90'),
+            ('login_max_attempts', '5'),
+            ('login_lockout_minutes', '15'),
+            ('audit_log_retention_days', '365'),
+        ]
+        for k, v in security_cfg:
             db.execute("INSERT OR IGNORE INTO system_config(key,value) VALUES(?,?)", (k, v))
         db.commit()
 init_db()
@@ -1746,7 +1826,7 @@ def customer_rate():
 
 
 @app.route('/api/agent/tickets/final-close', methods=['POST'])
-@admin_or_agent_required
+@logged_in_required
 def agent_final_close():
     """P0: Unified close - close from rated status (or force-close from any active status)"""
     data = request.get_json()
@@ -1775,7 +1855,7 @@ def agent_final_close():
     return jsonify({"ok":True})
 
 @app.route('/api/agent/tickets/<tk_id>/reopen', methods=['POST'])
-@admin_or_agent_required
+@logged_in_required
 def agent_reopen_ticket(tk_id):
     """L3/Admin 可重新打开已关闭工单（从 closed 回到 processing）"""
     ok, msg = transition_ticket(tk_id, 'processing', session['agent_id'],
@@ -1907,19 +1987,36 @@ def agent_login():
         enabled_providers = get_enabled_providers()
         return render_template('agent_login.html', providers=enabled_providers)
     data = request.get_json() or request.form
-    pwd_hash = hashlib.sha256(f'admin:{data.get("password","")}'.encode()).hexdigest()
-    a = get_db().execute("SELECT id,name,role FROM agents WHERE email=? AND password_hash=?", 
-                         (data.get('email',''), pwd_hash)).fetchone()
+    
+    # Try werkzeug password hash first (for 三员 accounts), then sha256 (legacy)
+    a = get_db().execute("SELECT id,name,role,password_hash FROM agents WHERE email=?", 
+                         (data.get('email',''),)).fetchone()
     if not a:
         _record_login('', data.get('email',''), 'agent', False, '用户名或密码错误')
         return jsonify({'error':'用户名或密码错误'}),401
+    
+    # Check password with both methods
+    password_ok = False
+    if a['password_hash'].startswith('pbkdf2:') or a['password_hash'].startswith('scrypt:'):
+        password_ok = check_password_hash(a['password_hash'], data.get('password',''))
+    else:
+        pwd_hash = hashlib.sha256(f'admin:{data.get("password","")}'.encode()).hexdigest()
+        password_ok = (pwd_hash == a['password_hash'])
+    
+    if not password_ok:
+        _record_login('', data.get('email',''), 'agent', False, '用户名或密码错误')
+        return jsonify({'error':'用户名或密码错误'}),401
+    
     session['agent_id'] = a['id']; session['agent_name'] = a['name']; session['agent_role'] = a['role']
     get_db().execute("UPDATE agents SET status='online' WHERE id=?", (a['id'],))
     get_db().commit()
     _record_login(a['id'], a['name'], 'agent', True)
     log_audit('', 'agent.login', a['id'], a['name'],
               {'role': a['role'], 'method': 'password'})
-    redirect_url = '/admin/dashboard' if a['role'] == 'admin' else '/agent/dashboard'
+    
+    # Redirect based on role
+    admin_roles = {'sysadmin', 'secadmin', 'audadmin', 'superadmin'}
+    redirect_url = '/admin/dashboard' if a['role'] in admin_roles else '/agent/dashboard'
     return jsonify({'ok':True,'redirect':redirect_url,'role':a['role']})
 
 @app.route('/agent/logout', methods=['POST'])
@@ -2187,14 +2284,20 @@ def agent_reply():
 
 # ====== 管理员后台 ======
 @app.route('/admin/dashboard')
-@admin_or_agent_required
+@logged_in_required
 def admin_dashboard():
-    if session.get('agent_role') == 'admin':
-        return render_template('admin.html', agent_name=session.get('agent_name',''))
+    agent_role = session.get('agent_role', '')
+    is_admin = agent_role in ('sysadmin', 'secadmin', 'audadmin', 'superadmin')
+    if is_admin:
+        prof = get_db().execute("SELECT agent_level FROM agent_profiles WHERE agent_id=?", (session['agent_id'],)).fetchone()
+        return render_template('admin.html', 
+            agent_name=session.get('agent_name',''),
+            agent_role=agent_role,
+            agent_level=prof['agent_level'] if prof else 1)
     prof = get_db().execute("SELECT agent_level FROM agent_profiles WHERE agent_id=?", (session['agent_id'],)).fetchone()
     return render_template('agent_dashboard.html',
         agent_name=session.get('agent_name',''),
-        agent_role=session.get('agent_role',''),
+        agent_role=agent_role,
         agent_level=prof['agent_level'] if prof else 1)
 
 # 用户管理
@@ -2313,7 +2416,7 @@ def admin_delete_customer(cid):
 # 客服管理
 
 @app.route('/api/admin/audit-logs', methods=['GET'])
-@admin_required
+@audadmin_required
 def admin_audit_logs():
     db = get_db()
     page = request.args.get('page', 1, type=int)
@@ -2344,7 +2447,7 @@ def admin_audit_logs():
     return jsonify({'logs': [dict(l) for l in logs], 'total': total, 'page': page, 'per_page': per_page})
 
 @app.route('/api/admin/login-logs', methods=['GET'])
-@admin_required
+@audadmin_required
 def admin_login_logs():
     db = get_db()
     page = request.args.get('page', 1, type=int)
@@ -2368,7 +2471,7 @@ def admin_login_logs():
 
 
 @app.route('/api/admin/agents', methods=['GET'])
-@admin_required
+@role_required('sysadmin', 'secadmin', 'superadmin')
 def admin_agents():
     agents = get_db().execute("""
         SELECT ag.*, ap.display_name, ap.department, ap.title, ap.phone as agent_phone, ap.agent_level,
@@ -2395,6 +2498,10 @@ def admin_add_agent():
     if not name or not email or not password: return jsonify({'error':'请填写完整信息'}),400
     existing = get_db().execute("SELECT id FROM agents WHERE email=?", (email,)).fetchone()
     if existing: return jsonify({'error':'邮箱已存在'}),400
+    # Password policy check
+    ok, msg = _check_password_policy(password)
+    if not ok:
+        return jsonify({'error': msg}), 400
     aid = gen_id('agent-'); pwd_hash = hashlib.sha256(f'admin:{password}'.encode()).hexdigest()
     level = int(data.get('level', 1))
     get_db().execute("INSERT INTO agents(id,name,email,password_hash) VALUES(?,?,?,?)", (aid, name, email, pwd_hash))
@@ -2408,9 +2515,18 @@ def admin_add_agent():
 
 @app.route('/api/admin/agents/<aid>', methods=['DELETE'])
 @csrf_protect
-@admin_required
 def admin_delete_agent(aid):
+    # 三员管理：删除客服归安全管理员
+    if not session.get('agent_id'):
+        return jsonify({'error':'未登录'}),401
+    role = session.get('agent_role', '')
+    if role not in ('secadmin', 'superadmin'):
+        return jsonify({'error':'权限不足'}),403
     if aid == session['agent_id']: return jsonify({'error':'不能删除自己'}),400
+    # Delete protection check
+    ok, msg = _check_delete_agent_protection(aid)
+    if not ok:
+        return jsonify({'error': msg}), 400
     get_db().execute("DELETE FROM customer_agent_bindings WHERE agent_id=?", (aid,))
     get_db().execute("DELETE FROM agent_profiles WHERE agent_id=?", (aid,))
     get_db().execute("DELETE FROM agents WHERE id=?", (aid,))
@@ -2462,7 +2578,7 @@ def admin_tickets():
 
 
 @app.route('/api/admin/tickets/<tk_id>/remark', methods=['PUT'])
-@admin_or_agent_required
+@sysadmin_required
 def admin_ticket_remark(tk_id):
     data = request.get_json()
     remarks = data.get('remarks', '')
@@ -2486,7 +2602,7 @@ def admin_ticket_delete(tk_id):
     return jsonify({'ok': True})
 
 @app.route('/api/admin/tickets/<tk_id>', methods=['GET'])
-@admin_or_agent_required
+@logged_in_required
 def admin_ticket_detail(tk_id):
     t = get_db().execute("""
         SELECT t.*, cust.name as customer_name, cust.id as customer_id,
@@ -2506,7 +2622,7 @@ def admin_ticket_detail(tk_id):
 
 # ====== 系统配置管理 ======
 @app.route('/api/admin/config', methods=['GET','POST'])
-@admin_or_agent_required
+@sysadmin_required
 def admin_config():
     if request.method == 'POST':
         data = request.get_json()
@@ -2529,6 +2645,29 @@ def admin_config():
         return jsonify({'ok':True})
     configs = get_db().execute("SELECT key,value FROM system_config").fetchall()
     return jsonify({c['key']:c['value'] for c in configs})
+
+# ====== 安全配置管理（安全管理员专属） ======
+SECURITY_CONFIG_KEYS = {'password_min_length','password_require_upper','password_expire_days','login_max_attempts','login_lockout_minutes','audit_log_retention_days'}
+
+@app.route('/api/admin/security-config', methods=['GET','POST'])
+@secadmin_required
+def admin_security_config():
+    if request.method == 'POST':
+        data = request.get_json()
+        db = get_db()
+        for k, v in data.items():
+            if k in SECURITY_CONFIG_KEYS:
+                db.execute("INSERT OR REPLACE INTO system_config(key,value,updated_at) VALUES(?,?,datetime('now','localtime'))", (k, str(v)))
+        db.commit()
+        log_audit('', 'admin.security_config.update', session.get('agent_id',''), session.get('agent_name',''),
+                  {'keys_updated': list(data.keys())})
+        return jsonify({'ok':True})
+    configs = get_db().execute("SELECT key,value FROM system_config").fetchall()
+    result = {}
+    for c in configs:
+        if c['key'] in SECURITY_CONFIG_KEYS:
+            result[c['key']] = c['value']
+    return jsonify(result)
 
 @app.route('/api/admin/tickets/status', methods=['POST'])
 @admin_required
@@ -2571,13 +2710,13 @@ def admin_tickets_status():
 
 
 @app.route('/api/admin/close-reasons', methods=['GET'])
-@admin_or_agent_required
+@sysadmin_required
 def admin_close_reasons():
     reasons = get_db().execute("SELECT * FROM close_reasons ORDER BY sort_order").fetchall()
     return jsonify([dict(r) for r in reasons])
 
 @app.route('/api/admin/close-reasons', methods=['POST'])
-@admin_or_agent_required
+@sysadmin_required
 def admin_add_close_reason():
     data = request.get_json()
     name = data.get('name','').strip()
@@ -2588,7 +2727,7 @@ def admin_add_close_reason():
     return jsonify({'ok':True})
 
 @app.route('/api/admin/close-reasons/<rid>', methods=['DELETE'])
-@admin_or_agent_required
+@sysadmin_required
 def admin_delete_close_reason(rid):
     db.execute("DELETE FROM close_reasons WHERE id=?", (rid,))
     db.commit()
@@ -2598,7 +2737,7 @@ def admin_delete_close_reason(rid):
 
 # ====== 一线转二线 ======
 @app.route('/api/agent/tickets/<tk_id>/transfer', methods=['POST'])
-@admin_or_agent_required
+@logged_in_required
 def agent_transfer_ticket(tk_id):
     aid = session['agent_id']
     data = request.get_json()
@@ -2634,7 +2773,7 @@ def agent_transfer_ticket(tk_id):
     return jsonify({'ok': True, 'target': target_name})
 
 @app.route('/api/agent/tickets/<tk_id>/transfer-agents', methods=['GET'])
-@admin_or_agent_required
+@logged_in_required
 def agent_transfer_agents(tk_id):
     aid = session['agent_id']
     agents = get_db().execute("""
@@ -2654,7 +2793,7 @@ def agent_transfer_agents(tk_id):
 
 # ====== 升级记录管理 ======
 @app.route('/api/admin/escalations', methods=['GET'])
-@admin_or_agent_required
+@sysadmin_required
 def admin_escalations():
     page = int(request.args.get('page',1))
     limit = int(request.args.get('limit',20))
@@ -2702,7 +2841,7 @@ def admin_escalations():
 
 # ====== 系统升级记录管理 ======
 @app.route('/api/admin/upgrades', methods=['GET'])
-@admin_or_agent_required
+@sysadmin_required
 def admin_upgrades():
     page = int(request.args.get('page',1))
     limit = int(request.args.get('limit',20))
@@ -2714,7 +2853,7 @@ def admin_upgrades():
     return jsonify({'upgrades':[dict(u) for u in upgrades], 'page':page, 'pages':pages, 'total':total})
 
 @app.route('/api/admin/upgrades', methods=['POST'])
-@admin_or_agent_required
+@sysadmin_required
 def admin_add_upgrade():
     data = request.get_json()
     version = data.get('version','').strip()
@@ -2727,7 +2866,7 @@ def admin_add_upgrade():
     return jsonify({'ok':True})
 
 @app.route('/api/admin/upgrades/<uid>', methods=['DELETE'])
-@admin_or_agent_required
+@sysadmin_required
 def admin_delete_upgrade(uid):
     get_db().execute("DELETE FROM system_upgrades WHERE id=?", (uid,))
     get_db().commit()
@@ -2757,16 +2896,16 @@ def uploaded_file(filename):
 def upload_page(): return render_template('upload.html')
 
 @app.route('/api/knowledge/list', methods=['GET'])
+@sysadmin_required
 def knowledge_list():
-    if request.args.get('password','') != ADMIN_PASSWORD: return jsonify({'error':'权限不足'}),403
     files = []
     for f in sorted(glob.glob(os.path.join(KNOWLEDGE_DIR,'*.md')), key=os.path.getmtime, reverse=True):
         s = os.stat(f); files.append({'name':os.path.basename(f),'size':s.st_size,'modified':datetime.fromtimestamp(s.st_mtime).strftime('%Y-%m-%d %H:%M')})
     return jsonify(files)
 
 @app.route('/api/upload', methods=['POST'])
+@sysadmin_required
 def upload_file():
-    if request.form.get('password','') != ADMIN_PASSWORD: return jsonify({'error':'密码错误'}),403
     file = request.files.get('file')
     if not file or file.filename=='': return jsonify({'error':'未选择文件'}),400
     ext = file.filename.rsplit('.',1)[-1].lower() if '.' in file.filename else ''
@@ -2793,25 +2932,25 @@ def upload_file():
     return jsonify({'success':True,'filename':md_name,'word_count':len(text)})
 
 @app.route('/api/knowledge/detail', methods=['GET'])
+@sysadmin_required
 def knowledge_detail():
-    if request.args.get('password','') != ADMIN_PASSWORD: return jsonify({'error':'权限不足'}),403
     fp = os.path.join(KNOWLEDGE_DIR, request.args.get('filename',''))
     if not os.path.exists(fp): return jsonify({'error':'文件不存在'}),404
     with open(fp,'r',encoding='utf-8') as f: return jsonify({'content':f.read()})
 
 @app.route('/api/knowledge/update', methods=['POST'])
+@sysadmin_required
 def knowledge_update():
     data = request.get_json()
-    if data.get('password','') != ADMIN_PASSWORD: return jsonify({'error':'权限不足'}),403
     fp = os.path.join(KNOWLEDGE_DIR, data.get('filename',''))
     if not os.path.exists(fp): return jsonify({'error':'文件不存在'}),404
     with open(fp,'w',encoding='utf-8') as f: f.write(data.get('content',''))
     return jsonify({'success':True})
 
 @app.route('/api/knowledge/delete', methods=['POST'])
+@sysadmin_required
 def knowledge_delete():
     data = request.get_json()
-    if data.get('password','') != ADMIN_PASSWORD: return jsonify({'error':'权限不足'}),403
     fp = os.path.join(KNOWLEDGE_DIR, data.get('filename',''))
     if not os.path.exists(fp): return jsonify({'error':'文件不存在'}),404
     os.remove(fp); return jsonify({'success':True})
@@ -2898,7 +3037,7 @@ def api_stats():
 # ====== Phase 3: New Admin API Endpoints ======
 
 @app.route('/api/admin/stats/overview', methods=['GET'])
-@admin_required
+@logged_in_required
 def admin_stats_overview():
     db = get_db()
     today = datetime.now().strftime('%Y-%m-%d')
@@ -2931,7 +3070,7 @@ def admin_stats_overview():
 
 
 @app.route('/api/admin/stats/agents', methods=['GET'])
-@admin_required
+@logged_in_required
 def admin_stats_agents():
     db = get_db()
     agents = db.execute(
@@ -2973,7 +3112,7 @@ def admin_tickets_stats():
 
 
 @app.route('/api/admin/analytics', methods=['GET'])
-@admin_required
+@logged_in_required
 def admin_analytics():
     """Data analysis dashboard data"""
     db = get_db()
@@ -3323,7 +3462,7 @@ def admin_test_external_adapter(eid):
 # ====== 缺陷操作（客服端） ======
 
 @app.route('/api/agent/tickets/<ticket_id>/external-links', methods=['GET'])
-@admin_or_agent_required
+@logged_in_required
 def agent_ticket_external_links(ticket_id):
     links = get_db().execute(
         "SELECT * FROM ticket_external_links WHERE ticket_id=? ORDER BY created_at DESC",
@@ -3333,7 +3472,7 @@ def agent_ticket_external_links(ticket_id):
 
 
 @app.route('/api/agent/tickets/<ticket_id>/create-defect', methods=['POST'])
-@admin_or_agent_required
+@logged_in_required
 def agent_create_defect(ticket_id):
     data = request.get_json()
     adapter_id = data.get('adapter_id', '')
@@ -3392,7 +3531,7 @@ def agent_create_defect(ticket_id):
 
 
 @app.route('/api/agent/tickets/<ticket_id>/query-defect', methods=['POST'])
-@admin_or_agent_required
+@logged_in_required
 def agent_query_defect(ticket_id):
     data = request.get_json()
     adapter_id = data.get('adapter_id', '')
@@ -3662,7 +3801,7 @@ def admin_knowledge_delete_old():
 # ====== Knowledge Audit System (知识沉淀审核) ======
 
 @app.route('/api/agent/tickets/knowledge', methods=['POST'])
-@admin_or_agent_required
+@logged_in_required
 def agent_knowledge_submit():
     """Engineer submits a knowledge document for review."""
     data = request.get_json() or {}
@@ -3704,7 +3843,7 @@ def agent_knowledge_submit():
 
 
 @app.route('/api/agent/knowledge/mine', methods=['GET'])
-@admin_or_agent_required
+@logged_in_required
 def agent_knowledge_mine():
     """Engineer views their own knowledge submissions."""
     rows = get_db().execute(
@@ -3726,7 +3865,7 @@ def agent_knowledge_mine():
 
 
 @app.route('/api/agent/knowledge/<kid>', methods=['GET'])
-@admin_or_agent_required
+@logged_in_required
 def agent_knowledge_detail(kid):
     """Get knowledge detail by id."""
     row = get_db().execute("SELECT * FROM knowledge_files WHERE id=?", (kid,)).fetchone()
@@ -3743,7 +3882,7 @@ def agent_knowledge_detail(kid):
 
 
 @app.route('/api/agent/knowledge/<kid>', methods=['PUT'])
-@admin_or_agent_required
+@logged_in_required
 def agent_knowledge_update(kid):
     """Update knowledge content (generates history entry)."""
     data = request.get_json() or {}
@@ -3779,7 +3918,7 @@ def agent_knowledge_update(kid):
 
 
 @app.route('/api/agent/knowledge/<kid>/history', methods=['GET'])
-@admin_or_agent_required
+@logged_in_required
 def agent_knowledge_history(kid):
     """Get knowledge update history."""
     rows = get_db().execute(
@@ -3838,7 +3977,7 @@ def admin_knowledge_reject(kid):
 
 
 @app.route('/api/agent/tickets/escalate', methods=['POST'])
-@admin_or_agent_required
+@logged_in_required
 def agent_escalate_ticket():
     """Escalate a processing ticket to a higher level engineer."""
     data = request.get_json() or {}
@@ -4175,14 +4314,14 @@ def get_enabled_providers() -> list:
 # ====== 认证提供者管理 API（管理员） ======
 
 @app.route('/api/admin/auth-providers', methods=['GET'])
-@admin_required
+@secadmin_required
 def admin_list_auth_providers():
     providers = get_db().execute('SELECT * FROM auth_providers ORDER BY provider_type, created_at').fetchall()
     return jsonify([dict(p) for p in providers])
 
 
 @app.route('/api/admin/auth-providers', methods=['POST'])
-@admin_required
+@secadmin_required
 def admin_create_auth_provider():
     data = request.get_json()
     aid = 'auth-' + uuid.uuid4().hex[:12]
@@ -4201,7 +4340,7 @@ def admin_create_auth_provider():
 
 
 @app.route('/api/admin/auth-providers/<pid>', methods=['PUT'])
-@admin_required
+@secadmin_required
 def admin_update_auth_provider(pid):
     data = request.get_json()
     existing = get_db().execute('SELECT id FROM auth_providers WHERE id=?', (pid,)).fetchone()
@@ -4217,7 +4356,7 @@ def admin_update_auth_provider(pid):
 
 
 @app.route('/api/admin/auth-providers/<pid>', methods=['DELETE'])
-@admin_required
+@secadmin_required
 def admin_delete_auth_provider(pid):
     get_db().execute('DELETE FROM auth_identity_mappings WHERE provider_id=?', (pid,))
     get_db().execute('DELETE FROM auth_providers WHERE id=?', (pid,))
@@ -4228,7 +4367,7 @@ def admin_delete_auth_provider(pid):
 
 
 @app.route('/api/admin/auth-providers/<pid>/test', methods=['POST'])
-@admin_required
+@secadmin_required
 def admin_test_auth_provider(pid):
     provider = get_auth_provider(pid)
     if not provider:
@@ -4429,7 +4568,7 @@ def auth_oidc_callback():
 
 
 @app.route('/api/admin/auth-mappings', methods=['GET'])
-@admin_required
+@secadmin_required
 def admin_list_auth_mappings():
     provider_id = request.args.get('provider_id', '')
     where = ['1=1']
