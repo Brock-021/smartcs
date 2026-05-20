@@ -10,3 +10,4 @@ uploads/
 *.swo
 *~
 .DS_Store
+CODE-REVIEW.md

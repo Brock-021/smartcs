@@ -30,9 +30,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .ticket .customer{font-size:13px;font-weight:500;color:#333}
 .ticket .ticket-no{font-size:10px;color:#999;font-family:monospace}
 .ticket .badge{font-size:10px;padding:1px 6px;border-radius:4px;color:#fff}
-.badge.open{background:#ff9800}
-.badge.assigned{background:#1a73e8}
-.badge.confirmed{background:#43a047}
+.badge.created{background:#9e9e9e}
+.badge.processing{background:#ff9800}
+.badge.resolved{background:#43a047}
+.badge.rated{background:#1a73e8}
 .badge.closed{background:#999}
 .ticket .preview{font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ticket .time{font-size:10px;color:#bbb;margin-top:2px}
@@ -162,8 +163,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <div class="tab active" id="tabPending" onclick="switchTab('pending')">待处理 <span class="count" id="pendingCount">0</span></div>
       <div class="tab" id="tabMine" onclick="switchTab('mine')">我的客户</div>
       <div class="tab" id="tabHistory" onclick="switchTab('history')">历史工单</div>
+      <div class="tab" id="tabAllMine" onclick="switchTab('all_mine')">全部经手</div>
+      <div class="tab" id="tabSearch" onclick="switchTab('search')">按时间段搜索</div>
+      <div class="tab" id="tabKnowledgeSub" onclick="switchTab('knowledge_sub')">📤 知识提交</div>
     </div>
     <div class="ticket-list" id="ticketList"><div style="text-align:center;padding:30px;color:#999">加载中...</div></div>
+    <div class="ticket-list" id="searchForm" style="display:none;padding:12px;background:#fff">
+      <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:10px">🔍 按条件搜索工单</div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:2px">开始日期</label>
+        <input type="date" id="searchStartDate" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:2px">结束日期</label>
+        <input type="date" id="searchEndDate" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:2px">状态</label>
+        <select id="searchStatus" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+          <option value="">全部状态</option>
+          <option value="created">待处理</option>
+          <option value="processing">处理中</option>
+          <option value="resolved">已解决</option>
+          <option value="rated">待关闭</option>
+          <option value="closed">已关闭</option>
+        </select>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:2px">工单编号</label>
+        <input type="text" id="searchTicketNumber" placeholder="如 tk20260101..." style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:2px">客户名称</label>
+        <input type="text" id="searchCustomerName" placeholder="搜索客户名称..." style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      </div>
+      <button onclick="doSearch()" style="width:100%;padding:8px;background:#1a73e8;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">🔍 搜索</button>
+    </div>
   </div>
   <div class="chat-area" id="chatArea">
     <div class="resolved-banner" id="resolvedBanner">✅ 该工单已解决/关闭
@@ -184,6 +219,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <button onclick="showDefectDialog()" id="defectBtn" style="background:#e53935;color:#fff;border:none;padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;white-space:nowrap">🔧 提交缺陷</button>
       <button onclick="requestAgentClose()" class="btn-close" id="closeBtn">✓ 请求关闭</button>
       <button onclick="showTransferDialog()" id="transferBtn" style="background:#e65100;color:#fff;border:none;padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;white-space:nowrap">→ 转交</button>
+      <button onclick="showKnowledgeSubmitDialog()" id="knowledgeBtn" style="display:none;background:#6a1b9a;color:#fff;border:none;padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;white-space:nowrap">📝 沉淀为知识</button>
+      <button onclick="showEscalateDialog()" id="escalateBtn" style="display:none;background:#e65100;color:#fff;border:none;padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;white-space:nowrap">⬆️ 问题升级</button>
     </div>
   </div>
 </div>
@@ -244,6 +281,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   </div>
 </div>
 
+<!-- 沉淀为知识弹窗 -->
+<div class="close-overlay" id="knowledgeSubmitDialog">
+  <div class="close-modal" style="width:600px;max-width:92%">
+    <h3>📝 沉淀为知识</h3>
+    <p style="font-size:12px;color:#666;margin-bottom:10px">将当前工单的解决方案沉淀为知识库条目</p>
+    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">知识标题 <span style="color:#e53935">*</span></label>
+    <input type="text" id="kbSubmitTitle" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:10px" placeholder="请输入知识标题">
+    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">知识内容 <span style="color:#e53935">*</span></label>
+    <textarea id="kbSubmitContent" rows="8" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;font-family:inherit;margin-bottom:10px;resize:vertical" placeholder="请输入详细的知识内容"></textarea>
+    <div class="btns">
+      <button class="cancel" onclick="document.getElementById('knowledgeSubmitDialog').classList.remove('show')">取消</button>
+      <button class="confirm" onclick="confirmKnowledgeSubmit()" style="background:#6a1b9a;color:#fff">📝 提交审核</button>
+    </div>
+  </div>
+</div>
+
+<!-- 问题升级弹窗 -->
+<div class="close-overlay" id="escalateDialog">
+  <div class="close-modal">
+    <h3>⬆️ 问题升级</h3>
+    <p style="font-size:12px;color:#666;margin-bottom:10px">将该工单升级到更高级别的工程师处理</p>
+    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">目标级别 <span style="color:#e53935">*</span></label>
+    <select id="escalateTargetLevel" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:10px"></select>
+    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">升级原因 <span style="color:#e53935">*</span></label>
+    <textarea id="escalateReason" rows="3" placeholder="请输入升级原因（如：需要专家介入、涉及复杂网络拓扑等）" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;font-family:inherit;margin-bottom:10px;resize:vertical"></textarea>
+    <div class="btns">
+      <button class="cancel" onclick="document.getElementById('escalateDialog').classList.remove('show')">取消</button>
+      <button class="confirm" onclick="confirmEscalate()" style="background:#e65100;color:#fff">⬆️ 确认升级</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var currentTicketId = null;
 var currentConv = null;
@@ -251,6 +320,9 @@ var currentTab = 'pending';
 var prevPendingCount = -1;
 var convPollTimer = null;
 var closeReasons = [];
+var levelNames = JSON.parse('{{ level_names|safe }}' || '{}');
+
+function getLevelName(level) { return levelNames[level] || ('L' + level); }
 
 // 请求通知权限
 if (window.Notification && Notification.permission === 'default') {
@@ -277,6 +349,119 @@ function loadCloseReasons() {
   xhr.send();
 }
 
+// ====== 知识提交 ======
+function showKnowledgeSubmitDialog() {
+  if (!window._currentTicketData || !currentTicketId) { alert('请先选择工单'); return; }
+  var tk = window._currentTicketData;
+  document.getElementById('kbSubmitTitle').value = tk.issue_description || '';
+  document.getElementById('kbSubmitContent').value = tk.resolution_notes || '';
+  document.getElementById('knowledgeSubmitDialog').classList.add('show');
+}
+
+function confirmKnowledgeSubmit() {
+  var title = document.getElementById('kbSubmitTitle').value.trim();
+  var content = document.getElementById('kbSubmitContent').value.trim();
+  if (!title || !content) { alert('标题和内容不能为空'); return; }
+  var btn = document.querySelector('#knowledgeSubmitDialog .confirm');
+  btn.disabled = true; btn.textContent = '⏳ 提交中...';
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/agent/tickets/knowledge', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    btn.disabled = false; btn.textContent = '📝 提交审核';
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        document.getElementById('knowledgeSubmitDialog').classList.remove('show');
+        alert('✅ 知识已提交审核，管理员审核通过后即可使用');
+      } else {
+        alert('提交失败：' + (d.error || '未知错误'));
+      }
+    } catch(e) { alert('提交失败'); }
+  };
+  xhr.onerror = function() { btn.disabled = false; btn.textContent = '📝 提交审核'; alert('网络错误'); };
+  xhr.send(JSON.stringify({title: title, content: content}));
+}
+
+// ====== 问题升级 ======
+function showEscalateDialog() {
+  if (!currentTicketId) { alert('请先选择工单'); return; }
+  document.getElementById('escalateReason').value = '';
+  // Populate target level selector based on current agent level
+  var agentLevel = window._agentLevel || 1;
+  var sel = document.getElementById('escalateTargetLevel');
+  var html = '';
+  for (var lv = agentLevel + 1; lv <= 4; lv++) {
+    var label = getLevelName(lv);
+    html += '<option value="' + lv + '">' + label + ' (L' + lv + ')</option>';
+  }
+  if (!html) { alert('您已经是最高级别，无法继续升级'); return; }
+  sel.innerHTML = html;
+  document.getElementById('escalateDialog').classList.add('show');
+}
+
+function confirmEscalate() {
+  var targetLevel = document.getElementById('escalateTargetLevel').value;
+  var reason = document.getElementById('escalateReason').value.trim();
+  if (!targetLevel) { alert('请选择目标级别'); return; }
+  if (!reason) { alert('请填写升级原因'); return; }
+  var btn = document.querySelector('#escalateDialog .confirm');
+  btn.disabled = true; btn.textContent = '⏳ 升级中...';
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/agent/tickets/escalate', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    btn.disabled = false; btn.textContent = '⬆️ 确认升级';
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        document.getElementById('escalateDialog').classList.remove('show');
+        alert('✅ ' + (d.message || '工单已升级'));
+        // Refresh ticket detail
+        if (currentTicketId && currentConv) {
+          loadConversation(currentConv, currentTicketId);
+        }
+      } else {
+        alert('升级失败：' + (d.error || '未知错误'));
+      }
+    } catch(e) { alert('升级失败'); }
+  };
+  xhr.onerror = function() { btn.disabled = false; btn.textContent = '⬆️ 确认升级'; alert('网络错误'); };
+  xhr.send(JSON.stringify({ticket_id: currentTicketId, target_level: parseInt(targetLevel), reason: reason}));
+}
+
+// ====== 我的知识提交列表 ======
+function loadMyKnowledgeSubmissions() {
+  var list = document.getElementById('ticketList');
+  list.style.display = 'block';
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:#999">⏳ 加载中...</div>';
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/agent/knowledge/mine', true);
+  xhr.onload = function() {
+    try {
+      var items = JSON.parse(xhr.responseText);
+      if (!items || items.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#999"><div style="font-size:40px;margin-bottom:8px">📝</div><div>暂无已提交的知识</div><div style="font-size:11px;color:#bbb;margin-top:4px">从工单解决记录中沉淀知识，提交后由管理员审核</div></div>';
+        return;
+      }
+      var h = '<div class="search-bar" style="padding:10px 12px"><span style="font-size:14px;font-weight:600;color:#333">📤 我的知识提交</span></div>';
+      h += '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f5f5f5"><th style="padding:7px 6px;text-align:left;border-bottom:1px solid #ddd">标题</th><th style="padding:7px 6px;text-align:left;border-bottom:1px solid #ddd">来源工单</th><th style="padding:7px 6px;text-align:center;border-bottom:1px solid #ddd">状态</th><th style="padding:7px 6px;text-align:left;border-bottom:1px solid #ddd">审核意见</th><th style="padding:7px 6px;text-align:left;border-bottom:1px solid #ddd">提交时间</th></tr></thead><tbody>';
+      var statusLabels = {pending:'⏳ 待审核', approved:'✅ 已通过', rejected:'❌ 已驳回'};
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        h += '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:7px 6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(it.title||'(无标题)') + '</td>' +
+          '<td style="padding:7px 6px;color:#999;font-size:11px">' + (it.filename||'').substring(0,20) + '</td>' +
+          '<td style="padding:7px 6px;text-align:center"><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:' + (it.status==='approved'?'#e8f5e9':it.status==='rejected'?'#ffebee':'#fff8e1') + ';color:' + (it.status==='approved'?'#2e7d32':it.status==='rejected'?'#c62828':'#ef6c00') + '">' + (statusLabels[it.status]||it.status) + '</span></td>' +
+          '<td style="padding:7px 6px;color:#888;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(it.review_notes||'-') + '</td>' +
+          '<td style="padding:7px 6px;color:#999;font-size:11px">' + (it.created_at||'').substring(0,16) + '</td></tr>';
+      }
+      h += '</tbody></table>';
+      list.innerHTML = h;
+    } catch(e) { list.innerHTML = '<div style="color:#d32f2f;padding:20px">加载失败</div>'; }
+  };
+  xhr.send();
+}
+
 function timeAgo(t) {
   var now = new Date();
   var then = new Date(t.replace(' ','T'));
@@ -292,7 +477,7 @@ function timeAgo(t) {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
-  var idMap = {pending:'tabPending', mine:'tabMine', history:'tabHistory'};
+  var idMap = {pending:'tabPending', mine:'tabMine', history:'tabHistory', all_mine:'tabAllMine', search:'tabSearch', knowledge_sub:'tabKnowledgeSub'};
   if(idMap[tab]) document.getElementById(idMap[tab]).classList.add('active');
   document.getElementById('placeholder').style.display = 'flex';
   document.getElementById('chatMessages').style.display = 'none';
@@ -301,12 +486,75 @@ function switchTab(tab) {
   document.getElementById('resolvedBanner').style.display = 'none';
   currentTicketId = null; currentConv = null;
   if (convPollTimer) { clearInterval(convPollTimer); convPollTimer = null; }
-  loadTickets();
+  
+  // Show/hide search form and ticket list
+  if (tab === 'search') {
+    document.getElementById('ticketList').style.display = 'none';
+    document.getElementById('searchForm').style.display = 'block';
+  } else if (tab === 'knowledge_sub') {
+    document.getElementById('searchForm').style.display = 'none';
+    loadMyKnowledgeSubmissions();
+  } else {
+    document.getElementById('ticketList').style.display = 'block';
+    document.getElementById('searchForm').style.display = 'none';
+    loadTickets();
+  }
+}
+
+function doSearch() {
+  var params = 'status=search';
+  var startDate = document.getElementById('searchStartDate').value;
+  var endDate = document.getElementById('searchEndDate').value;
+  var searchStatus = document.getElementById('searchStatus').value;
+  var ticketNumber = document.getElementById('searchTicketNumber').value.trim();
+  var customerName = document.getElementById('searchCustomerName').value.trim();
+  if (startDate) params += '&start_date=' + encodeURIComponent(startDate);
+  if (endDate) params += '&end_date=' + encodeURIComponent(endDate);
+  if (searchStatus) params += '&search_status=' + encodeURIComponent(searchStatus);
+  if (ticketNumber) params += '&ticket_number=' + encodeURIComponent(ticketNumber);
+  if (customerName) params += '&customer_name=' + encodeURIComponent(customerName);
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/agent/tickets?' + params, true);
+  xhr.onload = function() {
+    if (xhr.status === 401) { window.location.href = '/agent/login'; return; }
+    try {
+      var d = JSON.parse(xhr.responseText);
+      renderTicketResults(d);
+    } catch(e) { console.error('search err', e); }
+  };
+  xhr.send();
+}
+
+function renderTicketResults(tickets) {
+  var list = document.getElementById('ticketList');
+  document.getElementById('ticketList').style.display = 'block';
+  var statusText = {created:'待处理', processing:'处理中', resolved:'已解决', rated:'待关闭', closed:'已关闭'};
+  if (!tickets || tickets.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:#999">📭 未找到匹配的工单</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < tickets.length; i++) {
+    var t = tickets[i];
+    var active = currentTicketId === t.id ? ' active' : '';
+    var lastMsg = (t.last_msg || t.issue_description || '').substring(0, 50);
+    var tkNo = t.ticket_number || ('#' + t.id.substring(0,8));
+    html += '<div class="ticket' + active + '" onclick="selectTicket(\'' + t.id + '\',\'' + t.conversation_id + '\',\'' + t.status + '\')">' +
+      '<div class="top"><span class="customer">' + escapeHtml(t.customer_name || '游客') + '</span>' +
+      '<span class="badge ' + t.status + '">' + (statusText[t.status] || t.status) + '</span></div>' +
+      '<div class="ticket-no">' + tkNo + '</div>' +
+      '<div class="preview">' + escapeHtml(lastMsg) + '</div>' +
+      '<div class="time">' + timeAgo(t.created_at) + '</div></div>';
+  }
+  list.innerHTML = html;
 }
 
 function loadTickets() {
+  if (currentTab === 'search') return; // search uses separate handler
+  var url = '/api/agent/tickets?status=' + currentTab;
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/api/agent/tickets?status=' + currentTab, true);
+  xhr.open('GET', url, true);
   xhr.onload = function() {
     if (xhr.status === 401) { window.location.href = '/agent/login'; return; }
     try {
@@ -335,11 +583,16 @@ function loadTickets() {
       var pc = document.getElementById('pendingCount');
       if (pc) pc.textContent = d.length;
       if (!d || d.length === 0) {
-        list.innerHTML = '<div style="text-align:center;padding:30px;color:#999;line-height:1.8">📭 暂无工单<br><span style="font-size:11px">等待新客户接入...</span></div>';
+        var emptyMsg = '📭 暂无工单';
+        if (currentTab === 'pending') emptyMsg += '<br><span style="font-size:11px">等待新客户接入...</span>';
+        else if (currentTab === 'history') emptyMsg += '<br><span style="font-size:11px">暂无可处理的历史工单</span>';
+        else if (currentTab === 'all_mine') emptyMsg += '<br><span style="font-size:11px">暂未处理过任何工单</span>';
+        else if (currentTab === 'mine') emptyMsg += '<br><span style="font-size:11px">暂无已受理工单</span>';
+        list.innerHTML = '<div style="text-align:center;padding:30px;color:#999;line-height:1.8">' + emptyMsg + '</div>';
         return;
       }
       var html = '';
-      var statusText = {open:'待处理', assigned:'处理中', confirmed:'待确认', closed:'已关闭', resolved:'已解决'};
+      var statusText = {created:'待处理', processing:'处理中', resolved:'已解决', rated:'待关闭', closed:'已关闭'};
       for (var i = 0; i < d.length; i++) {
         var t = d[i];
         var active = currentTicketId === t.id ? ' active' : '';
@@ -409,12 +662,21 @@ function selectTicket(tkId, convId, status) {
     closeBtn.onclick = requestAgentClose;
     if (transferBtn) transferBtn.style.display = '';
   }
+  // 知识沉淀按钮：仅在已解决/待关闭/已关闭状态显示（将在 ticket detail load 后根据 resolution_notes 决定）
+  var kbBtn = document.getElementById('knowledgeBtn');
+  if (kbBtn) {
+    kbBtn.style.display = (status === 'resolved' || status === 'rated' || status === 'closed') ? 'inline-block' : 'none';
+  }
+  // 升级按钮：仅在处理中状态显示（将在 load 时根据 agent level 填充）
+  var esclBtn = document.getElementById('escalateBtn');
+  if (esclBtn) esclBtn.style.display = (status === 'processing') ? '' : 'none';
 
   var xhr1 = new XMLHttpRequest();
   xhr1.open('GET', '/api/agent/tickets/' + tkId, true);
   xhr1.onload = function() {
     try {
       var tk = JSON.parse(xhr1.responseText);
+      window._currentTicketData = tk;
       var tkNo = tk.ticket_number || ('#' + tk.id.substring(0,10));
       document.getElementById('custInfo').innerHTML =
         '<div class="row">' +
@@ -425,6 +687,16 @@ function selectTicket(tkId, convId, status) {
         '<span class="item"><b>工单：</b>' + tkNo + '</span>' +
         (tk.close_reason ? '<span class="item"><b>关闭原因：</b>' + tk.close_reason + '</span>' : '') +
         '<span class="item"><b>问题：</b>' + (tk.issue_description || '-') + '</span></div>';
+      // 知识沉淀按钮：有 resolution_notes 才显示
+      var kbBtn = document.getElementById('knowledgeBtn');
+      if (kbBtn) {
+        var resolutionStatuses = ['resolved','rated','closed'];
+        if (resolutionStatuses.indexOf(tk.status) >= 0 && tk.resolution_notes && tk.resolution_notes.trim()) {
+          kbBtn.style.display = 'inline-block';
+        } else {
+          kbBtn.style.display = 'none';
+        }
+      }
     } catch(e) {}
   };
   xhr1.send();
@@ -630,7 +902,9 @@ function showTransferDialog() {
       agents.forEach(function(a) {
         var label = (a.display_name || a.name);
         var dept = a.department ? ' · ' + a.department : '';
-        var level = a.agent_level === 2 ? ' 🔶二线' : '一线';
+        var level = getLevelName(a.agent_level || 1);
+        if (a.agent_level && a.agent_level >= 2) level = ' 🔶' + level;
+        else level = ' ' + level;
         var title = a.title ? ' · ' + a.title : '';
         var systems = (a.systems && a.systems.length > 0) ? ' 📡 ' + a.systems.join(', ') : '';
         html += '<div class="transfer-opt" data-aid="' + a.id + '" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #eee;border-radius:8px;margin-bottom:4px;cursor:pointer;background:#f9fafb">' +

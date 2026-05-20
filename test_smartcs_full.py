@@ -92,6 +92,11 @@ class SmartCSTest:
         except:
             return ''
 
+    def copy_cookies(self, src_cj, dst_cj):
+        """Copy cookies from one cookie jar to another."""
+        for cookie in src_cj:
+            dst_cj.set_cookie(cookie)
+
     def status(self, opener, path):
         """Fetch a URL and return HTTP status code."""
         try:
@@ -336,8 +341,8 @@ class SmartCSTest:
             test('D11. 用户收到客服回复', False, 'no history')
 
     def test_agent_request_close(self, tk_id):
-        """Agent requests to close ticket"""
-        r = self.api(self.agent, '/api/agent/tickets/request-close', {
+        """Agent resolves ticket (processing → resolved)"""
+        r = self.api(self.agent, '/api/agent/tickets/resolve', {
             'ticket_id': tk_id,
             'resolution_notes': '已远程协助解决蓝屏问题'
         })
@@ -370,7 +375,7 @@ class SmartCSTest:
         """Agent final-closes the ticket"""
         r = self.api(self.agent, '/api/agent/tickets/close', {
             'ticket_id': tk_id,
-            'reason': '已解决',
+            'close_reason': '已解决',
             'resolution_notes': '客户确认问题已解决'
         })
         test('D16. 客服最终关闭工单', (r and r.get('ok')) or (r and r.get('error')), str(r)[:100])
@@ -499,6 +504,32 @@ class SmartCSTest:
         r = self.api(self.admin, '/api/admin/webhooks', method='GET')
         test('E17. Webhook列表', r is not None, str(r)[:100])
 
+    def test_admin_analytics(self):
+        """Admin analytics endpoint"""
+        r = self.api(self.admin, '/api/admin/analytics', method='GET')
+        test('E18. 数据分析接口', r is not None and 'tickets_by_status' in r, str(r)[:100])
+
+    def test_admin_login_logs(self):
+        """Admin login logs endpoint"""
+        r = self.api(self.admin, '/api/admin/login-logs?page=1&per_page=10', method='GET')
+        test('E19. 登录日志接口', r is not None and 'logs' in r, str(r)[:100])
+
+    def test_admin_config_new_fields(self):
+        """Admin config with new fields"""
+        r = self.api(self.admin, '/api/admin/config', method='GET')
+        has_new_fields = r and 'auto_close_min' in r and 'auto_rate_hours' in r and 'ticket_search_max_days' in r and 'level_names' in r
+        test('E20. 新配置字段存在', has_new_fields, str(r)[:100] if r else 'no resp')
+
+    def test_agent_search_tickets(self):
+        """Agent search tickets with date range"""
+        r = self.api(self.agent, '/api/agent/tickets?status=search&start_date=2026-01-01&end_date=2026-12-31', method='GET')
+        test('D18. 按时间段搜索工单', r is not None, str(r)[:100])
+
+    def test_agent_all_mine_tickets(self):
+        """Agent all mine tickets (replied to)"""
+        r = self.api(self.agent, '/api/agent/tickets?status=all_mine', method='GET')
+        test('D19. 全部经手工单列表', r is not None, str(r)[:100])
+
     # ========================================================================== #
     #  F. 知识库 (Knowledge Base)
     # ========================================================================== #
@@ -507,6 +538,114 @@ class SmartCSTest:
         """Knowledge base list (public)"""
         r = self.api(self.user, '/api/knowledge/list', method='GET')
         test('F1. 知识库列表可访问', r is not None, str(r)[:100])
+
+    def test_admin_login_renew(self):
+        """Re-login admin to ensure session is fresh"""
+        r = self.api(self.admin, '/agent/login', {'email': ADMIN_EMAIL, 'password': ADMIN_PASS})
+        test('F0. 管理员重新登录', r is not None, str(r)[:100])
+
+    def test_admin_knowledge_create_with_tags(self):
+        """Admin creates knowledge with tags"""
+        import uuid
+        tag_id = uuid.uuid4().hex[:8]
+        r = self.api(self.admin, '/api/admin/knowledge', method='POST', data={
+            'file': f'test_tags_{tag_id}.md',
+            'snippet': '# Test Knowledge\nThis is a test knowledge entry with tags.',
+            'tags': {
+                'system_ids': ['测试系统'],
+                'scenario': '连接失败',
+                'category': '网络问题',
+                'custom': ['tag1', 'tag2']
+            }
+        })
+        test('F2. 管理员创建带标签的知识', r is not None and r.get('ok'), str(r)[:100])
+
+    def test_admin_knowledge_list_with_tags(self):
+        """Admin knowledge list returns tags and version info"""
+        r = self.api(self.admin, '/api/admin/knowledge', method='GET')
+        test('F3. 知识列表包含标签字段', r is not None and len(r) > 0, f'count={len(r) if r else 0}')
+        if r and len(r) > 0:
+            first = r[0]
+            has_tags = 'tags' in first
+            has_version_count = 'version_count' in first
+            has_created_by = 'created_by' in first
+            test('F3a. 条目包含tags字段', has_tags, str(first.keys()))
+            test('F3b. 条目包含version_count', has_version_count, str(first.keys()))
+            test('F3c. 条目包含created_by', has_created_by, str(first.keys()))
+
+    def test_admin_knowledge_tag_filter(self):
+        """Admin knowledge list filtered by tags"""
+        import urllib.parse, uuid
+        # Create fresh knowledge with known tags for filter testing
+        tag_id = uuid.uuid4().hex[:8]
+        cr = self.api(self.admin, '/api/admin/knowledge', method='POST', data={
+            'file': f'test_{tag_id}_filter.md',
+            'snippet': '# Filter Test Knowledge',
+            'tags': {
+                'system_ids': ['测试系统'],
+                'scenario': '连接失败',
+                'category': '网络问题',
+                'custom': []
+            }
+        })
+        test('F4_prep. 创建知识点用于筛选', cr is not None and cr.get('ok'), str(cr)[:100])
+        
+        r = self.api(self.admin, '/api/admin/knowledge?category=' + urllib.parse.quote('网络问题'), method='GET')
+        test('F4. 按分类筛选知识', r is not None and len(r) > 0, f'count={len(r) if r else 0}')
+        r2 = self.api(self.admin, '/api/admin/knowledge?scenario=' + urllib.parse.quote('连接失败'), method='GET')
+        test('F5. 按场景筛选知识', r2 is not None and len(r2) > 0, f'count={len(r2) if r2 else 0}')
+
+    def test_admin_knowledge_version_history(self):
+        """Admin can view knowledge version history"""
+        r = self.api(self.admin, '/api/admin/knowledge', method='GET')
+        if r and len(r) > 0:
+            kid = r[0]['id']
+            hr = self.api(self.admin, f'/api/admin/knowledge/{kid}/history', method='GET')
+            test('F6. 版本历史接口可访问', hr is not None, str(type(hr)))
+            test('F6a. 版本历史返回列表', isinstance(hr, list), str(type(hr)))
+        else:
+            test('F6. 版本历史接口（跳过：无知识条目）', True, 'skip')
+
+    def test_admin_knowledge_edit_with_tags(self):
+        """Admin edits knowledge with tags via PUT"""
+        import uuid
+        r = self.api(self.admin, '/api/admin/knowledge', method='GET')
+        if r and len(r) > 0:
+            kid = r[0]['id']
+            # Update tags
+            e = self.api(self.admin, f'/api/admin/knowledge/{kid}', method='PUT', data={
+                'tags': {'system_ids': [], 'scenario': '蓝屏', 'category': '硬件故障', 'custom': ['edited']},
+                'snippet': r[0].get('snippet', '# Updated')
+            })
+            test('F7. 编辑知识标签', e is not None and e.get('ok'), str(e)[:100])
+            # Verify history was recorded
+            hr = self.api(self.admin, f'/api/admin/knowledge/{kid}/history', method='GET')
+            has_history = hr is not None and len(hr) > 0
+            test('F7a. 编辑后历史记录增加', has_history, f'history_count={len(hr) if hr else 0}')
+        else:
+            test('F7. 编辑知识标签（跳过：无条目）', True, 'skip')
+
+    def test_agent_knowledge_submit_with_fields(self):
+        """Agent submits knowledge via ticket knowledge endpoint"""
+        # Re-login agent to ensure session is fresh
+        self.api(self.agent, '/agent/login', {'email': AGENT_EMAIL, 'password': AGENT_PASS})
+        import uuid
+        title = f'Test Agent Submit {uuid.uuid4().hex[:8]}'
+        content = '# Agent Submitted\nTest content for agent submission.'
+        r = self.api(self.agent, '/api/agent/tickets/knowledge', method='POST', data={
+            'title': title,
+            'content': content
+        })
+        test('F8. 客服提交知识条目', r is not None and r.get('ok'), str(r)[:100])
+        if r and r.get('knowledge_id'):
+            kid = r['knowledge_id']
+            # Verify has initial history
+            hr = self.api(self.agent, f'/api/agent/knowledge/{kid}/history', method='GET')
+            test('F8a. 提交后有历史记录', hr is not None and len(hr) > 0, f'history_count={len(hr) if hr else 0}, value={str(hr)[:200]}')
+            # Verify detail includes all fields
+            detail = self.api(self.agent, f'/api/agent/knowledge/{kid}', method='GET')
+            has_created_by = detail and 'created_by' in detail
+            test('F8b. 详情包含created_by', has_created_by, str(detail.keys() if detail else {}))
 
     # ========================================================================== #
     #  G. 异常场景 (Edge Cases)
@@ -578,6 +717,8 @@ class SmartCSTest:
         # Group B: User Chat (need conv_id for later tests)
         # ──────────────────────────────────────────────────────
         print("\n📋 B. 用户聊天流程")
+        # Copy session from reg user to default user so B group tests work (guest mode removed)
+        self.copy_cookies(self.reg_cj, self.user_cj)
         conv_id = self.test_user_first_message()
         if conv_id:
             self.test_request_human(conv_id)
@@ -631,12 +772,24 @@ class SmartCSTest:
         self.test_admin_im_adapters()
         self.test_admin_external_adapters()
         self.test_admin_webhooks()
+        self.test_admin_analytics()
+        self.test_admin_login_logs()
+        self.test_admin_config_new_fields()
+        self.test_agent_search_tickets()
+        self.test_agent_all_mine_tickets()
 
         # ──────────────────────────────────────────────────────
         # Group F: Knowledge Base
         # ──────────────────────────────────────────────────────
         print("\n📋 F. 知识库")
         self.test_knowledge_list()
+        self.test_admin_login_renew()
+        self.test_admin_knowledge_create_with_tags()
+        self.test_admin_knowledge_list_with_tags()
+        self.test_admin_knowledge_tag_filter()
+        self.test_admin_knowledge_version_history()
+        self.test_admin_knowledge_edit_with_tags()
+        self.test_agent_knowledge_submit_with_fields()
 
         # ──────────────────────────────────────────────────────
         # Group G: Edge Cases

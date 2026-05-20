@@ -60,6 +60,8 @@ class SmartCSTest:
         self.admin = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.admin_cj))
         self.reg_cj = http.cookiejar.CookieJar()
         self.reg = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.reg_cj))
+        self.user2_cj = http.cookiejar.CookieJar()
+        self.user2 = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.user2_cj))
         # Level-specific agent cookies
         self.agent_l2_cj = http.cookiejar.CookieJar()
         self.agent_l2 = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.agent_l2_cj))

@@ -157,6 +157,9 @@ table tr.cursor-pointer{cursor:pointer}
   <div class="tab" id="tabUpgrades" onclick="switchPage('upgrades',this)">📋 系统升级记录</div>
   <div class="tab" id="tabSystems" onclick="switchPage('systems',this)">🔧 负责系统</div>
   <div class="tab" id="tabWebhooks" onclick="switchPage('webhooks',this)">🔗 集成网关</div>
+  <div class="tab" id="tabAnalytics" onclick="switchPage('analytics',this)">📊 数据分析</div>
+  <div class="tab" id="tabKnowledge" onclick="switchPage('knowledge',this)">📚 知识库</div>
+  <div class="tab" id="tabLoginLogs" onclick="switchPage('loginlogs',this)">🔑 登录日志</div>
   <div class="tab" id="tabAuth" onclick="switchPage('auth',this)">🔐 认证管理</div>
   <div class="tab" id="tabAudit" onclick="switchPage('audit',this)">📋 审计日志</div>
 </div>
@@ -230,7 +233,23 @@ table tr.cursor-pointer{cursor:pointer}
       <label>管理员密码</label>
       <input type="password" id="cfgAdminPassword" placeholder="用于知识库上传等管理操作">
       <div class="hint">用于访问知识库上传页面等管理功能</div>
-      
+
+      <label>空闲工单自动关闭（分钟）</label>
+      <input type="number" id="cfgAutoCloseMin" placeholder="20">
+      <div class="hint">status=created 的工单超过此分钟数无用户消息则自动关闭</div>
+
+      <label>已解决工单自动评价（小时）</label>
+      <input type="number" id="cfgAutoRateHours" placeholder="24">
+      <div class="hint">status=resolved 的工单超过此小时数无用户活动则自动评价</div>
+
+      <label>工单搜索最大天数</label>
+      <input type="number" id="cfgTicketSearchMaxDays" placeholder="365">
+      <div class="hint">客服工作台按时间段搜索工单的最大日期范围（天）</div>
+
+      <label>工程师级别名称（JSON格式）</label>
+      <textarea id="cfgLevelNames" rows="3" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;resize:vertical;font-family:monospace;margin-bottom:14px" placeholder='{"1":"初级工程师","2":"高级工程师","3":"专家工程师","4":"首席工程师"}'></textarea>
+      <div class="hint">JSON 对象，键为级别数字，值为显示名称</div>
+
       <button class="save-btn" id="configSaveBtn" onclick="saveConfig()">💾 保存配置</button>
       <span id="configStatus" style="font-size:12px;color:#43a047;margin-left:12px;display:none">✅ 已保存</span>
     </div>
@@ -577,6 +596,137 @@ table tr.cursor-pointer{cursor:pointer}
 </div>
 
 <!-- ====== 认证管理 ====== -->
+<div class="content" id="pageLoginLogs">
+  <div class="card">
+    <div class="card-header"><span>🔑 登录日志</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="loginLogUserType" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px" onchange="loadLoginLogs()">
+          <option value="">全部类型</option>
+          <option value="customer">客户</option>
+          <option value="agent">客服/管理员</option>
+        </select>
+        <select id="loginLogSuccess" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px" onchange="loadLoginLogs()">
+          <option value="">全部状态</option>
+          <option value="1">成功</option>
+          <option value="0">失败</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <table id="loginLogTable"><tr><td colspan="7" class="status-text">加载中...</td></tr></table>
+    </div>
+    <div class="pagination" id="loginLogPagination"></div>
+  </div>
+</div>
+
+<div class="content" id="pageAnalytics">
+  <div class="card">
+    <div class="card-header"><span>📊 数据分析总览</span></div>
+    <div class="card-body">
+      <div class="stats-row" id="analyticsStatsRow">
+        <div class="stat-card"><div class="num" id="anTotal">-</div><div class="label">总工单数</div></div>
+        <div class="stat-card"><div class="num" id="anProcessing">-</div><div class="label">处理中</div></div>
+        <div class="stat-card"><div class="num" id="anResolved">-</div><div class="label">已解决</div></div>
+        <div class="stat-card"><div class="num" id="anRated">-</div><div class="label">待关闭</div></div>
+        <div class="stat-card"><div class="num" id="anClosed">-</div><div class="label">已关闭</div></div>
+      </div>
+      
+      <h4 style="margin:16px 0 8px;font-size:14px;color:#555">📊 各状态工单数</h4>
+      <div id="analyticsStatusBars" style="display:flex;align-items:flex-end;height:80px;gap:10px;margin-bottom:16px"></div>
+      
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-header" style="font-size:13px"><span>👤 客服拦截率排名</span></div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table id="analyticsAgentTable"><tr><td colspan="5" class="status-text">加载中...</td></tr></table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" style="font-size:13px"><span>🔧 按系统统计</span></div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table id="analyticsSystemTable"><tr><td colspan="2" class="status-text">加载中...</td></tr></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content" id="pageKnowledge">
+  <div class="card">
+    <div class="card-header" style="gap:8px;flex-wrap:wrap">
+      <span>📚 知识库管理</span>
+      <div style="display:flex;gap:6px">
+        <span class="kb-subtab active" onclick="switchKbTab('approved',this)" style="cursor:pointer;padding:4px 12px;border-radius:6px;background:#e3f2fd;color:#1565c0;font-size:12px">已入库</span>
+        <span class="kb-subtab" onclick="switchKbTab('pending',this)" style="cursor:pointer;padding:4px 12px;border-radius:6px;background:#f5f5f5;color:#666;font-size:12px">待审核</span>
+        <span class="kb-subtab" onclick="switchKbTab('rejected',this)" style="cursor:pointer;padding:4px 12px;border-radius:6px;background:#f5f5f5;color:#666;font-size:12px">已驳回</span>
+      </div>
+      <button onclick="showKbForm()" style="background:#1a73e8;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:auto">+ 新增</button>
+    </div>
+    <div class="card-body" style="padding:0;overflow-x:auto">
+      <!-- 已入库视图 -->
+      <div id="kbApprovedView">
+        <div class="search-bar" style="padding:12px 14px 0">
+          <input id="kbSearch" placeholder="搜索知识条目..." onkeydown="if(event.key==='Enter')searchKb()" style="flex:2">
+          <select id="kbFilterSystem" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+            <option value="">全部系统</option>
+          </select>
+          <select id="kbFilterScenario" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+            <option value="">全部场景</option>
+            <option value="无法开机">无法开机</option>
+            <option value="蓝屏">蓝屏</option>
+            <option value="连接失败">连接失败</option>
+            <option value="报错提示">报错提示</option>
+            <option value="其他">其他</option>
+          </select>
+          <select id="kbFilterCategory" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+            <option value="">全部分类</option>
+            <option value="硬件故障">硬件故障</option>
+            <option value="软件配置">软件配置</option>
+            <option value="网络问题">网络问题</option>
+            <option value="账号权限">账号权限</option>
+            <option value="其他">其他</option>
+          </select>
+          <button onclick="searchKb()">🔍 搜索</button>
+        </div>
+        <div id="kbList" style="padding:0 14px 14px"><div style="text-align:center;padding:20px;color:#999">⏳ 加载中...</div></div>
+      </div>
+      <!-- 待审核视图 -->
+      <div id="kbPendingView" style="display:none">
+        <div id="kbPendingList" style="padding:14px"><div style="text-align:center;padding:20px;color:#999">⏳ 加载中...</div></div>
+      </div>
+      <!-- 已驳回视图 -->
+      <div id="kbRejectedView" style="display:none">
+        <div id="kbRejectedList" style="padding:14px"><div style="text-align:center;padding:20px;color:#999">⏳ 加载中...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 预览知识弹窗 -->
+<div class="close-overlay" id="kbPreviewOverlay">
+  <div class="close-modal" style="width:600px;max-width:92%">
+    <h3>📄 知识预览</h3>
+    <div id="kbPreviewContent" style="padding:12px 0;max-height:50vh;overflow-y:auto;font-size:13px;line-height:1.6;white-space:pre-wrap"></div>
+    <div class="btns">
+      <button class="cancel" onclick="document.getElementById('kbPreviewOverlay').classList.remove('show')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 驳回原因输入弹窗 -->
+<div class="close-overlay" id="kbRejectOverlay">
+  <div class="close-modal">
+    <h3>❌ 驳回知识</h3>
+    <input type="hidden" id="kbRejectId">
+    <p style="font-size:12px;color:#666;margin-bottom:10px">请填写驳回原因：</p>
+    <textarea id="kbRejectReason" rows="3" placeholder="请输入驳回原因（如：内容不够详细、格式需要调整等）" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;font-family:inherit;margin-bottom:10px;resize:vertical"></textarea>
+    <div class="btns">
+      <button class="cancel" onclick="document.getElementById('kbRejectOverlay').classList.remove('show')">取消</button>
+      <button class="confirm" onclick="confirmRejectKb()" style="background:#e53935;color:#fff">确认驳回</button>
+    </div>
+  </div>
+</div>
+
 <div class="content" id="pageAuth">
   <div class="card">
     <div class="card-header"><span>🔐 认证提供者列表</span>
@@ -636,9 +786,10 @@ table tr.cursor-pointer{cursor:pointer}
     <input id="newAgentEmpId" placeholder="工号（选填）">
     <input id="newAgentPhone" placeholder="电话（选填）">
     <select id="newAgentLevel" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;font-family:inherit;margin:8px 0">
-    <option value="1">一线客服</option>
-    <option value="2">二线工程师</option>
-    <option value="3">三线专家</option>
+    <option value="1">初级工程师</option>
+    <option value="2">高级工程师</option>
+    <option value="3">专家工程师</option>
+    <option value="4">首席工程师</option>
   </select>
   <input id="newAgentCompany" placeholder="公司（选填）">
     <input id="newAgentDept" placeholder="部门（选填）">
@@ -652,6 +803,9 @@ table tr.cursor-pointer{cursor:pointer}
 
 <script>
 var currentPage = 'tickets';
+
+// Preload level names cache
+setTimeout(function() { loadLevelNamesCache(); }, 100);
 
 function switchPage(page, el) {
   currentPage = page;
@@ -671,6 +825,9 @@ function switchPage(page, el) {
   if (page === 'webhooks') loadWebhooks();
   if (page === 'auth') { loadAuthProviders(); loadAuthMappingFilter(); }
   if (page === 'audit') { document.getElementById('section-audit').style.display = 'block'; loadAuditLogs(); }
+  if (page === 'loginlogs') loadLoginLogs();
+  if (page === 'analytics') loadAnalytics();
+  if (page === 'knowledge') { loadKnowledgeBase(); loadKnowledgePending(); loadKnowledgeRejected(); }
 }
 
 function logout() {
@@ -686,8 +843,17 @@ function loadKnowledgeBase() {
   if (!el) return;
   el.innerHTML = '<div style="text-align:center;padding:20px;color:#999">\u23f3 加载中...</div>';
   var q = document.getElementById('kbSearch') ? document.getElementById('kbSearch').value.trim() : '';
+  var sysFilter = document.getElementById('kbFilterSystem') ? document.getElementById('kbFilterSystem').value : '';
+  var sceFilter = document.getElementById('kbFilterScenario') ? document.getElementById('kbFilterScenario').value : '';
+  var catFilter = document.getElementById('kbFilterCategory') ? document.getElementById('kbFilterCategory').value : '';
+  var params = [];
+  if (q) params.push('q=' + encodeURIComponent(q));
+  if (sysFilter) params.push('system_id=' + encodeURIComponent(sysFilter));
+  if (sceFilter) params.push('scenario=' + encodeURIComponent(sceFilter));
+  if (catFilter) params.push('category=' + encodeURIComponent(catFilter));
+  var url = '/api/admin/knowledge' + (params.length ? '?' + params.join('&') : '');
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/api/admin/knowledge' + (q ? '?q='+encodeURIComponent(q) : ''), true);
+  xhr.open('GET', url, true);
   xhr.onload = function() {
     try {
       var items = JSON.parse(xhr.responseText);
@@ -695,43 +861,158 @@ function loadKnowledgeBase() {
         el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#999"><div style="font-size:40px;margin-bottom:8px">\uD83D\uDCDA</div><div>暂无知识条目</div></div>';
         return;
       }
-      var h = '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f5f5f5"><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">文件名</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">分类</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">内容预览</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">创建时间</th><th style="padding:8px 6px;text-align:center;border-bottom:1px solid #ddd">操作</th></tr></thead><tbody>';
+      var h = '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f5f5f5"><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">文件名</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">标签</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">内容预览</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">创建人</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">创建时间</th><th style="padding:8px 6px;text-align:center;border-bottom:1px solid #ddd">操作</th></tr></thead><tbody>';
       for (var i = 0; i < items.length; i++) {
         var it = items[i];
-        var jn = it.file || ''; var sn = (it.snippet||'').substring(0,60); var ct = it.category||'通用';
-        h += '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 6px">' + escapeHtml(jn) +
-          '</td><td style="padding:8px 6px"><span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:8px;font-size:11px">' + escapeHtml(ct) +
-          '</span></td><td style="padding:8px 6px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#666">' + escapeHtml(sn) +
+        var jn = it.filename || it.file || '';
+        var sn = (it.snippet||'').substring(0,60);
+        // Build tag badges
+        var tagHtml = '';
+        if (it.tags) {
+          var tg = it.tags;
+          if (tg.category) tagHtml += '<span style="display:inline-block;background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:8px;font-size:10px;margin:1px">' + escapeHtml(tg.category) + '</span>';
+          if (tg.scenario) tagHtml += '<span style="display:inline-block;background:#fff3e0;color:#e65100;padding:1px 6px;border-radius:8px;font-size:10px;margin:1px">' + escapeHtml(tg.scenario) + '</span>';
+          if (tg.custom && tg.custom.length) {
+            for (var ci = 0; ci < tg.custom.length; ci++) {
+              tagHtml += '<span style="display:inline-block;background:#f3e5f5;color:#7b1fa2;padding:1px 6px;border-radius:8px;font-size:10px;margin:1px">' + escapeHtml(tg.custom[ci]) + '</span>';
+            }
+          }
+        }
+        if (!tagHtml) tagHtml = '<span style="color:#bbb;font-size:11px">-</span>';
+        var vcount = it.version_count || 0;
+        var versionBtn = vcount > 0
+          ? '<button class="btn btn-sm" onclick="showKbHistory(\'' + it.id + '\')" style="padding:2px 6px;font-size:10px;background:#f0f4ff;color:#1a73e8;border:1px solid #bbdefb;border-radius:4px;cursor:pointer;margin-right:2px" title="版本历史(' + vcount + ')">\uD83D\uDD0D ' + vcount + '</button>'
+          : '';
+        h += '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 6px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(jn) +
+          '</td><td style="padding:8px 6px">' + tagHtml +
+          '</td><td style="padding:8px 6px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#666">' + escapeHtml(sn) +
+          '</td><td style="padding:8px 6px;color:#666;font-size:11px">' + escapeHtml(it.created_by || it.uploaded_by || '-') +
           '</td><td style="padding:8px 6px;color:#999;font-size:11px">' + (it.created_at||'').substring(0,10) +
-          '</td><td style="padding:8px 6px;text-align:center">' +
-          '<button class="btn btn-sm" onclick="editKb(\'' + it.id + '\')" style="padding:3px 8px;font-size:11px;margin-right:4px">\u270F\uFE0F</button>' +
-          '<button class="btn btn-sm" onclick="deleteKb(\'' + it.id + '\',\'' + (it.file||'').replace(/'/g,"\\'") + '\')" style="padding:3px 8px;font-size:11px;background:#ffebee;color:#c62828">\uD83D\uDDD1\uFE0F</button>' +
+          '</td><td style="padding:8px 6px;text-align:center;white-space:nowrap">' + versionBtn +
+          '<button class="btn btn-sm" onclick="editKb(\'' + it.id + '\')" style="padding:3px 8px;font-size:11px;margin-right:2px">\u270F\uFE0F</button>' +
+          '<button class="btn btn-sm" onclick="deleteKb(\'' + it.id + '\',\'' + (jn||'').replace(/'/g,"\\'") + '\')" style="padding:3px 8px;font-size:11px;background:#ffebee;color:#c62828">\uD83D\uDDD1\uFE0F</button>' +
           '</td></tr>';
       }
       h += '</tbody></table>';
       el.innerHTML = h;
-    } catch(e) { el.innerHTML = '<div style="color:#d32f2f;padding:20px">加载失败</div>'; }
+    } catch(e) { el.innerHTML = '<div style="color:#d32f2f;padding:20px">加载失败: ' + escapeHtml(e.message) + '</div>'; }
   };
   xhr.send();
 }
-function searchKb() { loadKnowledgeBase(); }
+
+function searchKb() {
+  // Load systems for filter if not loaded
+  var sysFilter = document.getElementById('kbFilterSystem');
+  if (sysFilter && sysFilter.options.length <= 1) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/admin/systems', true);
+    xhr.onload = function() {
+      try {
+        var systems = JSON.parse(xhr.responseText);
+        for (var i = 0; i < systems.length; i++) {
+          var opt = document.createElement('option');
+          opt.value = systems[i].name;
+          opt.textContent = systems[i].name;
+          sysFilter.appendChild(opt);
+        }
+      } catch(e) {}
+    };
+    xhr.send();
+  }
+  loadKnowledgeBase();
+}
+
+// ====== 版本历史弹窗 ======
+function showKbHistory(kid) {
+  var ov = document.createElement('div'); ov.className = 'login-overlay show'; ov.style.zIndex = '999';
+  var content = '<div style="background:#fff;max-width:700px;margin:5% auto;padding:24px;border-radius:12px">' +
+    '<h3 style="margin:0 0 16px">\uD83D\uDD0D 版本历史</h3>' +
+    '<div id="kbHistoryContent" style="max-height:60vh;overflow-y:auto">\u23f3 加载中...</div>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">' +
+    '<button class="btn" onclick="this.closest(\'.login-overlay\').remove()" style="padding:8px 20px">关闭</button></div></div>';
+  ov.innerHTML = content;
+  ov.addEventListener('click',function(e){if(e.target===this)this.remove()});
+  document.body.appendChild(ov);
+  // Load history
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/knowledge/' + kid + '/history', true);
+  xhr.onload = function() {
+    try {
+      var history = JSON.parse(xhr.responseText);
+      var histEl = document.getElementById('kbHistoryContent');
+      if (!histEl) return;
+      if (!history || history.length === 0) {
+        histEl.innerHTML = '<div style="text-align:center;padding:20px;color:#999">暂无历史记录</div>';
+        return;
+      }
+      var hh = '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f5f5f5"><th style="padding:6px 8px;text-align:left;border-bottom:1px solid #ddd">操作人</th><th style="padding:6px 8px;text-align:left;border-bottom:1px solid #ddd">操作</th><th style="padding:6px 8px;text-align:left;border-bottom:1px solid #ddd">时间</th></tr></thead><tbody>';
+      for (var i = 0; i < history.length; i++) {
+        var h = history[i];
+        hh += '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:6px 8px">' + escapeHtml(h.updated_by_name || h.updated_by || '-') +
+          '</td><td style="padding:6px 8px;max-width:300px">' + escapeHtml(h.change_summary || '-') +
+          '</td><td style="padding:6px 8px;color:#999;font-size:11px">' + (h.updated_at||'').substring(0,16) +
+          '</td></tr>';
+      }
+      hh += '</tbody></table>';
+      histEl.innerHTML = hh;
+    } catch(e) {
+      var histEl = document.getElementById('kbHistoryContent');
+      if (histEl) histEl.innerHTML = '<div style="color:#d32f2f;padding:20px">加载失败</div>';
+    }
+  };
+  xhr.send();
+}
 
 function showKbForm() {
   var ov = document.createElement('div'); ov.className = 'login-overlay show'; ov.id = 'kbFormOverlay'; ov.style.zIndex = '999';
-  ov.innerHTML = '<div style="background:#fff;max-width:600px;margin:5% auto;padding:24px;border-radius:12px"><h3 style="margin:0 0 16px">\uD83D\uDCDA 新增知识条目</h3>' +
-    '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">文件名 *</label><input id="kbFormFile" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px" placeholder="例如：打印机故障排查"></div>' +
-    '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">分类</label><input id="kbFormCategory" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px" placeholder="例如：打印机、网络、电脑" value="通用"></div>' +
+  // Load systems for multi-select
+  var sysOpts = '';
+  var sysXhr = new XMLHttpRequest();
+  sysXhr.open('GET', '/api/admin/systems', false);
+  try { sysXhr.send(); var sysList = JSON.parse(sysXhr.responseText);
+    for (var si = 0; si < sysList.length; si++) {
+      sysOpts += '<option value="' + escapeHtml(sysList[si].name) + '">' + escapeHtml(sysList[si].name) + '</option>';
+    }
+  } catch(e) {}
+  ov.innerHTML = '<div style="background:#fff;max-width:650px;margin:5% auto;padding:24px;border-radius:12px"><h3 style="margin:0 0 16px">\uD83D\uDCDA 新增知识条目</h3>' +
+    '<div style="margin-bottom:10px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">文件名 *</label><input id="kbFormFile" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px" placeholder="例如：打印机故障排查"></div>' +
+    '<div style="margin-bottom:10px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">所属系统（可多选）</label>' +
+    '<select id="kbFormSystems" multiple style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:13px;min-height:80px">' + sysOpts + '</select></div>' +
+    '<div class="row" style="margin-bottom:10px">' +
+    '<div class="field"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">故障场景</label>' +
+    '<select id="kbFormScenario" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">' +
+    '<option value="">请选择</option><option value="无法开机">无法开机</option><option value="蓝屏">蓝屏</option>' +
+    '<option value="连接失败">连接失败</option><option value="报错提示">报错提示</option><option value="其他">其他</option></select></div>' +
+    '<div class="field"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">软硬件分类</label>' +
+    '<select id="kbFormCategory" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">' +
+    '<option value="">请选择</option><option value="硬件故障">硬件故障</option><option value="软件配置">软件配置</option>' +
+    '<option value="网络问题">网络问题</option><option value="账号权限">账号权限</option><option value="其他">其他</option></select></div></div>' +
+    '<div style="margin-bottom:10px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">自定义标签（逗号分隔）</label>' +
+    '<input id="kbFormCustomTags" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px" placeholder="例如：BIOS,驱动,配置"></div>' +
     '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">知识内容 *</label><textarea id="kbFormSnippet" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;min-height:120px;resize:vertical" placeholder="输入详细的解答内容..."></textarea></div>' +
     '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="document.getElementById(\'kbFormOverlay\').remove()" style="padding:8px 20px">取消</button><button class="btn btn-primary" onclick="submitKbForm()" style="padding:8px 20px">保存</button></div></div>';
   ov.addEventListener('click',function(e){if(e.target===this)this.remove()});
   document.body.appendChild(ov);
 }
 function submitKbForm() {
-  var f=document.getElementById('kbFormFile').value.trim(), s=document.getElementById('kbFormSnippet').value.trim(), c=document.getElementById('kbFormCategory').value.trim()||'通用';
+  var f=document.getElementById('kbFormFile').value.trim(), s=document.getElementById('kbFormSnippet').value.trim();
   if(!f||!s){alert('文件名和内容不能为空');return;}
+  // Collect tags
+  var sysSelect = document.getElementById('kbFormSystems');
+  var sysIds = [];
+  if (sysSelect) {
+    for (var si = 0; si < sysSelect.options.length; si++) {
+      if (sysSelect.options[si].selected) sysIds.push(sysSelect.options[si].value);
+    }
+  }
+  var scenario = document.getElementById('kbFormScenario') ? document.getElementById('kbFormScenario').value : '';
+  var category = document.getElementById('kbFormCategory') ? document.getElementById('kbFormCategory').value : '';
+  var customStr = document.getElementById('kbFormCustomTags') ? document.getElementById('kbFormCustomTags').value.trim() : '';
+  var custom = customStr ? customStr.split(',').map(function(t){return t.trim()}).filter(function(t){return t}) : [];
+  var tags = {system_ids: sysIds, scenario: scenario, category: category, custom: custom};
   var x=new XMLHttpRequest();x.open('POST','/api/admin/knowledge',true);x.setRequestHeader('Content-Type','application/json');
   x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.ok){document.getElementById('kbFormOverlay').remove();loadKnowledgeBase();}else alert(d.error||'失败');}catch(e){alert('失败');}};
-  x.send(JSON.stringify({file:f,snippet:s,category:c}));
+  x.send(JSON.stringify({file:f, snippet:s, tags: tags}));
 }
 function editKb(id) {
   // Fetch current data
@@ -743,10 +1024,41 @@ function editKb(id) {
       var it = null;
       for (var i = 0; i < items.length; i++) { if (items[i].id === id) { it = items[i]; break; } }
       if (!it) { alert('未找到该条目'); return; }
+      var tags = it.tags || {system_ids:[],scenario:'',category:'',custom:[]};
       var ov=document.createElement('div');ov.className='login-overlay show';ov.id='kbFormOverlay';ov.style.zIndex='999';
-      ov.innerHTML='<div style="background:#fff;max-width:600px;margin:5% auto;padding:24px;border-radius:12px"><h3 style="margin:0 0 16px">\u270F\uFE0F 编辑</h3>'+
-        '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">文件名</label><input id="kbFormFile" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px" value="'+escapeHtml(it.file||'')+'"></div>'+
-        '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">分类</label><input id="kbFormCategory" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px" value="'+escapeHtml(it.category||'')+'"></div>'+
+      // Load systems
+      var sysOpts = '';
+      var selSysIds = (tags.system_ids || []);
+      var sysXhr = new XMLHttpRequest();
+      sysXhr.open('GET', '/api/admin/systems', false);
+      try { sysXhr.send(); var sysList = JSON.parse(sysXhr.responseText);
+        for (var si = 0; si < sysList.length; si++) {
+          var selected = selSysIds.indexOf(sysList[si].name) >= 0 ? 'selected' : '';
+          sysOpts += '<option value="' + escapeHtml(sysList[si].name) + '" ' + selected + '>' + escapeHtml(sysList[si].name) + '</option>';
+        }
+      } catch(e) {}
+      var customTagsStr = (tags.custom || []).join(', ');
+      ov.innerHTML='<div style="background:#fff;max-width:650px;margin:5% auto;padding:24px;border-radius:12px"><h3 style="margin:0 0 16px">\u270F\uFE0F 编辑</h3>'+
+        '<div style="margin-bottom:10px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">文件名 *</label><input id="kbFormFile" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px" value="'+escapeHtml(it.filename||it.file||'')+'"></div>'+
+        '<div style="margin-bottom:10px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">所属系统（可多选）</label>' +
+        '<select id="kbFormSystems" multiple style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:13px;min-height:80px">' + sysOpts + '</select></div>' +
+        '<div class="row" style="margin-bottom:10px">' +
+        '<div class="field"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">故障场景</label>' +
+        '<select id="kbFormScenario" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">' +
+        '<option value="">请选择</option><option value="无法开机"'+(tags.scenario==='无法开机'?'selected':'')+'>无法开机</option>' +
+        '<option value="蓝屏"'+(tags.scenario==='蓝屏'?'selected':'')+'>蓝屏</option>' +
+        '<option value="连接失败"'+(tags.scenario==='连接失败'?'selected':'')+'>连接失败</option>' +
+        '<option value="报错提示"'+(tags.scenario==='报错提示'?'selected':'')+'>报错提示</option>' +
+        '<option value="其他"'+(tags.scenario==='其他'?'selected':'')+'>其他</option></select></div>' +
+        '<div class="field"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">软硬件分类</label>' +
+        '<select id="kbFormCategory" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px">' +
+        '<option value="">请选择</option><option value="硬件故障"'+(tags.category==='硬件故障'?'selected':'')+'>硬件故障</option>' +
+        '<option value="软件配置"'+(tags.category==='软件配置'?'selected':'')+'>软件配置</option>' +
+        '<option value="网络问题"'+(tags.category==='网络问题'?'selected':'')+'>网络问题</option>' +
+        '<option value="账号权限"'+(tags.category==='账号权限'?'selected':'')+'>账号权限</option>' +
+        '<option value="其他"'+(tags.category==='其他'?'selected':'')+'>其他</option></select></div></div>' +
+        '<div style="margin-bottom:10px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">自定义标签（逗号分隔）</label>' +
+        '<input id="kbFormCustomTags" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px" value="'+escapeHtml(customTagsStr)+'"></div>' +
         '<div style="margin-bottom:12px"><label style="display:block;font-size:13px;color:#555;margin-bottom:4px">内容</label><textarea id="kbFormSnippet" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;min-height:120px;resize:vertical">'+escapeHtml(it.snippet||'')+'</textarea></div>'+
         '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="document.getElementById(\'kbFormOverlay\').remove()">取消</button><button class="btn btn-primary" onclick="submitEditKb(\''+id+'\')">更新</button></div></div>';
       ov.addEventListener('click',function(e){if(e.target===this)this.remove()});
@@ -755,8 +1067,170 @@ function editKb(id) {
   };
   xhr.send();
 }
-function submitEditKb(id){var f=document.getElementById('kbFormFile').value.trim(),s=document.getElementById('kbFormSnippet').value.trim(),c=document.getElementById('kbFormCategory').value.trim()||'通用';if(!f||!s){alert('不能为空');return;}var x=new XMLHttpRequest();x.open('PUT','/api/admin/knowledge/'+id,true);x.setRequestHeader('Content-Type','application/json');x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.ok){document.getElementById('kbFormOverlay').remove();loadKnowledgeBase();}else alert(d.error||'失败');}catch(e){alert('失败');}};x.send(JSON.stringify({file:f,snippet:s,category:c}));}
+function submitEditKb(id){
+  var f=document.getElementById('kbFormFile').value.trim(), s=document.getElementById('kbFormSnippet').value.trim();
+  if(!f||!s){alert('不能为空');return;}
+  // Collect tags
+  var sysSelect = document.getElementById('kbFormSystems');
+  var sysIds = [];
+  if (sysSelect) {
+    for (var si = 0; si < sysSelect.options.length; si++) {
+      if (sysSelect.options[si].selected) sysIds.push(sysSelect.options[si].value);
+    }
+  }
+  var scenario = document.getElementById('kbFormScenario') ? document.getElementById('kbFormScenario').value : '';
+  var category = document.getElementById('kbFormCategory') ? document.getElementById('kbFormCategory').value : '';
+  var customStr = document.getElementById('kbFormCustomTags') ? document.getElementById('kbFormCustomTags').value.trim() : '';
+  var custom = customStr ? customStr.split(',').map(function(t){return t.trim()}).filter(function(t){return t}) : [];
+  var tags = {system_ids: sysIds, scenario: scenario, category: category, custom: custom};
+  var x=new XMLHttpRequest();x.open('PUT','/api/admin/knowledge/'+id,true);x.setRequestHeader('Content-Type','application/json');
+  x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.ok){document.getElementById('kbFormOverlay').remove();loadKnowledgeBase();}else alert(d.error||'失败');}catch(e){alert('失败');}};
+  x.send(JSON.stringify({file:f, snippet:s, tags: tags}));
+}
 function deleteKb(id,nm){if(!confirm('确定删除 "'+nm+'" 吗？'))return;var x=new XMLHttpRequest();x.open('DELETE','/api/admin/knowledge/'+id,true);x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.ok)loadKnowledgeBase();else alert(d.error||'失败');}catch(e){alert('失败');}};x.send();}
+
+// ====== 知识库审核（待审批） ======
+var kbCurrentTab = 'approved';
+function switchKbTab(tab, el) {
+  kbCurrentTab = tab;
+  document.querySelectorAll('.kb-subtab').forEach(function(t){t.style.background='#f5f5f5';t.style.color='#666'});
+  if (el) { el.style.background='#e3f2fd'; el.style.color='#1565c0'; }
+  document.getElementById('kbApprovedView').style.display = tab === 'approved' ? '' : 'none';
+  document.getElementById('kbPendingView').style.display = tab === 'pending' ? '' : 'none';
+  document.getElementById('kbRejectedView').style.display = tab === 'rejected' ? '' : 'none';
+  if (tab === 'approved') loadKnowledgeBase();
+  if (tab === 'pending') loadKnowledgePending();
+  if (tab === 'rejected') loadKnowledgeRejected();
+}
+
+function loadKnowledgePending() {
+  var el = document.getElementById('kbPendingList');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:#999">\u23f3 加载中...</div>';
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/knowledge/pending', true);
+  xhr.onload = function() {
+    try {
+      var items = JSON.parse(xhr.responseText);
+      if (!items || items.length === 0) {
+        el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#999"><div style="font-size:40px;margin-bottom:8px">\u2705</div><div>暂无待审核的知识条目</div></div>';
+        return;
+      }
+      var h = '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f5f5f5"><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">标题</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">提交人</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">提交时间</th><th style="padding:8px 6px;text-align:center;border-bottom:1px solid #ddd">操作</th></tr></thead><tbody>';
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        var title = it.title || '(无标题)';
+        var submitter = it.submitter_display_name || it.submitted_by || '-';
+        h += '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 6px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(title) +
+          '</td><td style="padding:8px 6px">' + escapeHtml(submitter) +
+          '</td><td style="padding:8px 6px;color:#999;font-size:11px">' + (it.created_at||'').substring(0,16) +
+          '</td><td style="padding:8px 6px;text-align:center;white-space:nowrap">' +
+          '<button onclick="previewKb(' + it.id + ')" style="padding:3px 8px;font-size:11px;margin:1px;background:#f0f4ff;color:#1a73e8;border:1px solid #bbdefb;border-radius:4px;cursor:pointer">\uD83D\uDC40 预览</button>' +
+          '<button onclick="approveKb(' + it.id + ')" style="padding:3px 8px;font-size:11px;margin:1px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:4px;cursor:pointer">通过 \u2705</button>' +
+          '<button onclick="rejectKb(' + it.id + ')" style="padding:3px 8px;font-size:11px;margin:1px;background:#ffebee;color:#c62828;border:1px solid #ffcdd2;border-radius:4px;cursor:pointer">驳回 \u274C</button>' +
+          '</td></tr>';
+      }
+      h += '</tbody></table>';
+      el.innerHTML = h;
+    } catch(e) { el.innerHTML = '<div style="color:#d32f2f;padding:20px">加载失败: ' + escapeHtml(e.message) + '</div>'; }
+  };
+  xhr.send();
+}
+
+function loadKnowledgeRejected() {
+  var el = document.getElementById('kbRejectedList');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:#999">\u23f3 加载中...</div>';
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/knowledge', true);
+  xhr.onload = function() {
+    try {
+      var allItems = JSON.parse(xhr.responseText);
+      var items = allItems.filter(function(it) { return it.status === 'rejected'; });
+      if (!items || items.length === 0) {
+        el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#999"><div style="font-size:40px;margin-bottom:8px">\uD83D\uDCDA</div><div>暂无已驳回的知识条目</div></div>';
+        return;
+      }
+      var h = '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f5f5f5"><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">标题</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">提交人</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">驳回原因</th><th style="padding:8px 6px;text-align:left;border-bottom:1px solid #ddd">提交时间</th></tr></thead><tbody>';
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        var title = it.file || '(无标题)';
+        h += '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 6px">' + escapeHtml(title) +
+          '</td><td style="padding:8px 6px">' + escapeHtml(it.submitted_by||'-') +
+          '</td><td style="padding:8px 6px;color:#c62828;font-size:12px">' + escapeHtml(it.review_notes||'-') +
+          '</td><td style="padding:8px 6px;color:#999;font-size:11px">' + (it.created_at||'').substring(0,16) +
+          '</td></tr>';
+      }
+      h += '</tbody></table>';
+      el.innerHTML = h;
+    } catch(e) { el.innerHTML = '<div style="color:#d32f2f;padding:20px">加载失败</div>'; }
+  };
+  xhr.send();
+}
+
+function previewKb(id) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/knowledge/pending', true);
+  xhr.onload = function() {
+    try {
+      var items = JSON.parse(xhr.responseText);
+      var item = null;
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].id === id) { item = items[i]; break; }
+      }
+      if (!item) { alert('未找到该条目'); return; }
+      var title = item.title || '(无标题)';
+      var content = item.content || '(无内容)';
+      document.getElementById('kbPreviewContent').innerHTML =
+        '<div style="font-weight:600;font-size:15px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #eee">' + escapeHtml(title) + '</div>' +
+        '<div>' + escapeHtml(content).replace(/\n/g, '<br>') + '</div>';
+      document.getElementById('kbPreviewOverlay').classList.add('show');
+    } catch(e) { alert('加载失败'); }
+  };
+  xhr.send();
+}
+
+function approveKb(id) {
+  if (!confirm('确认通过该知识条目？')) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/knowledge/' + id + '/approve', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        loadKnowledgePending();
+        loadKnowledgeBase();
+      } else { alert(d.error || '操作失败'); }
+    } catch(e) { alert('操作失败'); }
+  };
+  xhr.send('{}');
+}
+
+function rejectKb(id) {
+  document.getElementById('kbRejectId').value = id;
+  document.getElementById('kbRejectReason').value = '';
+  document.getElementById('kbRejectOverlay').classList.add('show');
+}
+
+function confirmRejectKb() {
+  var id = document.getElementById('kbRejectId').value;
+  var reason = document.getElementById('kbRejectReason').value.trim();
+  if (!reason) { alert('请填写驳回原因'); return; }
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/admin/knowledge/' + id + '/reject', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        document.getElementById('kbRejectOverlay').classList.remove('show');
+        loadKnowledgePending();
+      } else { alert(d.error || '操作失败'); }
+    } catch(e) { alert('操作失败'); }
+  };
+  xhr.send(JSON.stringify({reason: reason}));
+}
 
 // ====== SSL 证书管理 ======
 function loadSslInfo() {
@@ -1446,7 +1920,7 @@ function loadAgents() {
       for (var i = 0; i < d.length; i++) {
         var a = d[i];
         var statusDot = a.status==='online'?'🟢 在线':'⚪ 离线';
-        var levelLabel = a.agent_level >= 3 ? '🔴三线' : (a.agent_level === 2 ? '🔶二线' : '🔵一线');
+        var levelLabel = getLevelLabel(a.agent_level);
         var sysText = (a.systems && a.systems.length > 0) ? a.systems.join(', ') : '-';
         html += '<tr>' +
           '<td>'+(a.display_name||a.name)+'</td>' +
@@ -1472,6 +1946,16 @@ function loadAgents() {
 
 function showAddAgent() {
   document.getElementById('addAgentModal').classList.add('show');
+  // Update level select options with dynamic names
+  loadLevelNamesCache(function(names) {
+    var sel = document.getElementById('newAgentLevel');
+    var html = '';
+    for (var lv = 1; lv <= 4; lv++) {
+      var label = names[lv] || ('L' + lv);
+      html += '<option value="' + lv + '">' + label + '</option>';
+    }
+    sel.innerHTML = html;
+  });
 }
 
 function addAgent() {
@@ -1516,9 +2000,32 @@ function deleteAgent(aid) {
   xhr.send();
 }
 
+var _levelNamesCache = null;
+function loadLevelNamesCache(callback) {
+  if (_levelNamesCache) { if (callback) callback(_levelNamesCache); return; }
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/config', true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      _levelNamesCache = JSON.parse(d.level_names || '{}');
+    } catch(e) { _levelNamesCache = {'1':'初级工程师','2':'高级工程师','3':'专家工程师','4':'首席工程师'}; }
+    if (callback) callback(_levelNamesCache);
+  };
+  xhr.onerror = function() {
+    _levelNamesCache = {'1':'初级工程师','2':'高级工程师','3':'专家工程师','4':'首席工程师'};
+    if (callback) callback(_levelNamesCache);
+  };
+  xhr.send();
+}
+function getLevelLabel(level) {
+  if (_levelNamesCache) return _levelNamesCache[level] || ('L' + level);
+  return 'L' + level;
+}
+
 function promoteAgent(aid, currentLevel) {
-  var nextLevel = currentLevel >= 3 ? 1 : currentLevel + 1;
-  var labels = {1:'一线客服',2:'二线工程师',3:'三线专家'};
+  var nextLevel = currentLevel >= 4 ? 1 : currentLevel + 1;
+  var nextName = getLevelLabel(nextLevel);
   if (!confirm('将升级为 '+labels[nextLevel]+'？')) return;
   var xhr = new XMLHttpRequest();
   xhr.open('PUT', '/api/admin/agents/'+aid+'/level', true);
@@ -1534,10 +2041,21 @@ function loadConfig() {
   xhr.onload = function() {
     try {
       var d = JSON.parse(xhr.responseText);
+      // Update level names cache
+      try { _levelNamesCache = JSON.parse(d.level_names || '{}'); } catch(e) {}
       document.getElementById('cfgApiBaseUrl').value = d.api_base_url || '';
       document.getElementById('cfgApiKey').value = d.api_key || '';
       document.getElementById('cfgModelName').value = d.model_name || '';
       document.getElementById('cfgAdminPassword').value = d.admin_password || '';
+      document.getElementById('cfgAutoCloseMin').value = d.auto_close_min || '20';
+      document.getElementById('cfgAutoRateHours').value = d.auto_rate_hours || '24';
+      document.getElementById('cfgTicketSearchMaxDays').value = d.ticket_search_max_days || '365';
+      try {
+        var levelNames = JSON.parse(d.level_names || '{}');
+        document.getElementById('cfgLevelNames').value = JSON.stringify(levelNames, null, 2);
+      } catch(e) {
+        document.getElementById('cfgLevelNames').value = d.level_names || '{}';
+      }
     } catch(e) { console.error(e); }
   };
   xhr.send();
@@ -1547,11 +2065,18 @@ function saveConfig() {
   var btn = document.getElementById('configSaveBtn');
   btn.disabled = true; btn.textContent = '保存中...';
   document.getElementById('configStatus').style.display = 'none';
+  var levelNamesRaw = document.getElementById('cfgLevelNames').value.trim();
+  var levelNamesParsed = {};
+  try { levelNamesParsed = JSON.parse(levelNamesRaw); } catch(e) { alert('级别名称格式错误，请输入合法的 JSON'); btn.disabled = false; btn.textContent = '💾 保存配置'; return; }
   var data = {
     api_base_url: document.getElementById('cfgApiBaseUrl').value.trim(),
     api_key: document.getElementById('cfgApiKey').value.trim(),
     model_name: document.getElementById('cfgModelName').value.trim(),
-    admin_password: document.getElementById('cfgAdminPassword').value.trim()
+    admin_password: document.getElementById('cfgAdminPassword').value.trim(),
+    auto_close_min: document.getElementById('cfgAutoCloseMin').value.trim() || '20',
+    auto_rate_hours: document.getElementById('cfgAutoRateHours').value.trim() || '24',
+    ticket_search_max_days: document.getElementById('cfgTicketSearchMaxDays').value.trim() || '365',
+    level_names: JSON.stringify(levelNamesParsed)
   };
   var xhr = new XMLHttpRequest();
   xhr.open('POST', '/api/admin/config', true);
@@ -2795,6 +3320,116 @@ if ('serviceWorker' in navigator) {
 </div>
 <script>
 var auditPage = 1;
+
+// ===== 登录日志 =====
+var loginLogPage = 1;
+function loadLoginLogs(page) {
+  loginLogPage = page || loginLogPage;
+  var userType = document.getElementById('loginLogUserType').value;
+  var success = document.getElementById('loginLogSuccess').value;
+  var url = '/api/admin/login-logs?page=' + loginLogPage + '&per_page=20';
+  if (userType) url += '&user_type=' + encodeURIComponent(userType);
+  if (success) url += '&success=' + success;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      var logs = d.logs || [];
+      var html = '<tr><th>用户</th><th>类型</th><th>IP</th><th>User-Agent</th><th>状态</th><th>时间</th></tr>';
+      if (logs.length === 0) {
+        html += '<tr><td colspan="6" class="status-text">暂无登录日志</td></tr>';
+      } else {
+        for (var i = 0; i < logs.length; i++) {
+          var l = logs[i];
+          var statusHtml = l.success ? '<span style="color:#43a047">✅ 成功</span>' : '<span style="color:#e53935">❌ 失败' + (l.fail_reason ? ': ' + l.fail_reason : '') + '</span>';
+          html += '<tr><td>' + escapeHtml(l.user_name || l.user_id || '-') + '</td>' +
+            '<td>' + (l.user_type === 'agent' ? '客服/管理员' : '客户') + '</td>' +
+            '<td style="font-size:11px;font-family:monospace">' + escapeHtml(l.ip_address || '-') + '</td>' +
+            '<td style="font-size:10px;color:#999;max-width:200px;overflow:hidden;text-overflow:ellipsis">' + escapeHtml((l.user_agent || '-').substring(0,60)) + '</td>' +
+            '<td>' + statusHtml + '</td>' +
+            '<td style="font-size:11px;color:#999">' + (l.login_at || '-') + '</td></tr>';
+        }
+      }
+      document.getElementById('loginLogTable').innerHTML = html;
+      var totalPages = d.total ? Math.ceil(d.total / 20) : 1;
+      var pp = '';
+      if (loginLogPage > 1) pp += '<button onclick="loginLogPage=' + (loginLogPage - 1) + ';loadLoginLogs()">‹ 上一页</button>';
+      pp += '<span style="padding:6px 10px;font-size:12px;color:#888">第 ' + loginLogPage + '/' + totalPages + ' 页</span>';
+      if (loginLogPage < totalPages) pp += '<button onclick="loginLogPage=' + (loginLogPage + 1) + ';loadLoginLogs()">下一页 ›</button>';
+      document.getElementById('loginLogPagination').innerHTML = pp;
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
+// ===== 数据分析 =====
+function loadAnalytics() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/admin/analytics', true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      var statusData = d.tickets_by_status || {};
+      document.getElementById('anTotal').textContent = (statusData.created||0)+(statusData.processing||0)+(statusData.resolved||0)+(statusData.rated||0)+(statusData.closed||0);
+      document.getElementById('anProcessing').textContent = statusData.processing || 0;
+      document.getElementById('anResolved').textContent = statusData.resolved || 0;
+      document.getElementById('anRated').textContent = statusData.rated || 0;
+      document.getElementById('anClosed').textContent = statusData.closed || 0;
+      
+      // Status bars
+      var labels = {created:'待处理', processing:'处理中', resolved:'已解决', rated:'待关闭', closed:'已关闭'};
+      var colors = {created:'#ff9800', processing:'#1a73e8', resolved:'#43a047', rated:'#7b1fa2', closed:'#999'};
+      var maxVal = Math.max(statusData.created||1, statusData.processing||1, statusData.resolved||1, statusData.rated||1, statusData.closed||1);
+      var barsHtml = '';
+      var order = ['created','processing','resolved','rated','closed'];
+      for (var si = 0; si < order.length; si++) {
+        var key = order[si];
+        var val = statusData[key] || 0;
+        var pct = (val / maxVal) * 100;
+        barsHtml += '<div style="display:flex;flex-direction:column;align-items:center;flex:1">' +
+          '<div style="width:100%;background:#f0f0f0;border-radius:6px;height:60px;display:flex;align-items:flex-end;overflow:hidden">' +
+          '<div style="width:100%;height:' + pct + '%;background:' + colors[key] + ';border-radius:6px;transition:height 0.3s"></div></div>' +
+          '<div style="font-size:11px;color:' + colors[key] + ';font-weight:600;margin-top:4px">' + val + '</div>' +
+          '<div style="font-size:10px;color:#888">' + labels[key] + '</div></div>';
+      }
+      document.getElementById('analyticsStatusBars').innerHTML = barsHtml;
+      
+      // Agent table
+      var agents = d.tickets_by_agent || [];
+      var agentHtml = '<tr><th>客服</th><th>总工单</th><th>已关闭</th><th>待关闭</th><th>拦截率</th></tr>';
+      if (agents.length === 0) {
+        agentHtml += '<tr><td colspan="5" class="status-text">暂无数据</td></tr>';
+      } else {
+        for (var ai = 0; ai < agents.length; ai++) {
+          var a = agents[ai];
+          var rateColor = a.interception_rate >= 80 ? '#43a047' : (a.interception_rate >= 50 ? '#ff9800' : '#e53935');
+          agentHtml += '<tr><td>' + escapeHtml(a.agent_name) + '</td>' +
+            '<td>' + a.total + '</td>' +
+            '<td>' + a.closed + '</td>' +
+            '<td>' + a.rated + '</td>' +
+            '<td style="font-weight:600;color:' + rateColor + '">' + a.interception_rate + '%</td></tr>';
+        }
+      }
+      document.getElementById('analyticsAgentTable').innerHTML = agentHtml;
+      
+      // System table
+      var systems = d.tickets_by_system || [];
+      var sysHtml = '<tr><th>系统名称</th><th>工单数</th></tr>';
+      if (systems.length === 0) {
+        sysHtml += '<tr><td colspan="2" class="status-text">暂无系统数据</td></tr>';
+      } else {
+        for (var si2 = 0; si2 < systems.length; si2++) {
+          var s = systems[si2];
+          sysHtml += '<tr><td>' + escapeHtml(s.system_name) + '</td><td>' + s.count + '</td></tr>';
+        }
+      }
+      document.getElementById('analyticsSystemTable').innerHTML = sysHtml;
+    } catch(e) { console.error(e); }
+  };
+  xhr.send();
+}
+
 function loadAuditLogs(page) {
   auditPage = page || auditPage;
   var p = document.getElementById('auditFilterActor').value;
