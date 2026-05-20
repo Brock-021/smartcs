@@ -278,12 +278,19 @@ Layer 3 — 回归测试（验证旧功能兼容）
 
 | 编号 | 用例名 | 步骤 | 预期 |
 |------|--------|------|------|
-| **J1** | **工程师提交知识** | POST /api/agent/tickets/knowledge | status=pending |
+| **J1** | **工程师提交知识（含标签）** | POST /api/agent/tickets/knowledge（含 tags 参数） | status=pending + tags 已存储 |
 | **J2** | **工程师查看自己提交** | GET /api/agent/knowledge/mine | 包含刚提交的 |
 | **J3** | **管理员通过审核** | POST /api/admin/knowledge/{id}/approve | status=approved |
 | **J4** | **已通过知识可被 AI 搜索** | AI 搜索包含新知识 | 命中 |
 | **J5** | **管理员驳回知识** | POST /api/admin/knowledge/{id}/reject + reason | status=rejected±reason |
 | **J6** | **被驳回知识可重提** | 工程师查看驳回原因→修改→重新提交 | 回到 pending |
+| **J7** | **知识标签保存正确** | 提交时传入 system_ids、scenario、category | 数据库 tags JSON 字段正确 |
+| **J8** | **按标签筛选知识** | GET /api/admin/knowledge?system=x&category=y | 返回匹配条目 |
+| **J9** | **创建者/创建时间记录** | 提交后查看 knowledge_files.created_by | 非空，指向工程师 |
+| **J10** | **更新知识产生历史记录** | 工程师更新知识→检查 knowledge_history | history 表有条目，含 change_summary |
+| **J11** | **知识版本历史可查** | GET /api/admin/knowledge/{id}/history | 返回多个版本记录 |
+| **J12** | **批注信息展示完整** | 知识详情页底部 | 显示创建者 + 更新记录列表 |
+| **J13** | **被驳回后重新提交显示提示** | 已驳回知识重新提交 | 页面提示「此知识曾被驳回」
 
 #### K组：身份切换 (4项)
 

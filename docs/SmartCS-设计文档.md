@@ -305,17 +305,40 @@ class STTService:
 ```python
 class KnowledgeService:
     def search(query) -> List[Document]       # FTS5 全文搜索
-    def upload(file, submitter_id) -> Doc     # 状态 = pending
-    def approve(doc_id, admin_id) -> Doc      # pending → approved
-    def reject(doc_id, admin_id, reason)      # pending → rejected
+    def upload(file, submitter_id, tags) -> Doc  # 状态 = pending
+    def update(doc_id, agent_id, content, tags) -> Doc  # 更新内容+标签
+    def approve(doc_id, admin_id) -> Doc       # pending → approved
+    def reject(doc_id, admin_id, reason)       # pending → rejected
     def list_by_status(status) -> List[Doc]
     def list_by_submitter(submitter_id) -> List[Doc]
+    def list_by_tags(tag_filters) -> List[Doc] # 按标签筛选
+    def get_history(doc_id) -> List[History]   # 版本历史
 ```
 
 **审核流程状态：**
 ```
 工程师提交 → pending ──┬── 管理员通过 → approved → AI 可搜索
                        └── 管理员驳回 → rejected → 工程师可修改重提
+```
+
+**标签系统：**
+| 维度 | 示例 | 存储 |
+|------|------|------|
+| 所属系统 | 打印机 / 网络 / ERP | `tags.system_ids: []` 关联 systems 表 |
+| 故障场景 | 蓝屏 / 连接失败 | `tags.scenario: str` 预定义列表 |
+| 软硬件分类 | 硬件故障 / 软件配置 | `tags.category: []` 三级分类 |
+| 自定义标签 | 紧急 / 高频 | `tags.custom: []` 自由输入 |
+
+**版本追溯展示（文档内批注）：**
+```
+📄 创建者：张三 | 2026-05-18 14:30
+🔄 更新记录 ×3 | 最新更新：李四 2026-05-19 10:15「修改了正文内容」
+
+（工程师提交页顶部）
+🔄 此知识曾被驳回（原因：内容不够详细），本次为重新提交
+
+（知识预览页顶部）
+📝 上次更新：李四 于 2026-05-19 10:15 修改了正文内容
 ```
 
 ### 2.6 集成网关模块
@@ -554,8 +577,33 @@ CREATE TABLE knowledge_files (
     submitter_id    TEXT DEFAULT '',             -- 提交工程师 ID
     reject_reason   TEXT DEFAULT '',             -- 驳回原因
     uploaded_by     TEXT DEFAULT '',
-    created_at      TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    created_at      TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    
+    -- 🔖 标签字段（v5.0 新增）
+    tags            TEXT DEFAULT '{}',            -- JSON: {"system_ids":[],"scenario":"","category":[],"custom":[]}
+    
+    -- 👤 版本追溯字段（v5.0 新增）
+    created_by      TEXT DEFAULT '',             -- 首次上传人 (agent_id)
+    created_by_name TEXT DEFAULT '',             -- 上传人姓名（冗余）
+    updated_by      TEXT DEFAULT '',             -- 最后更新人 (agent_id)
+    updated_by_name TEXT DEFAULT '',             -- 最后更新人姓名（冗余）
+    updated_at      TEXT DEFAULT ''              -- 最后更新时间
 );
+
+-- 知识版本历史表（v5.0 新增）
+CREATE TABLE knowledge_history (
+    id              TEXT PRIMARY KEY,
+    knowledge_id    TEXT NOT NULL,               -- 关联 knowledge_files.id
+    updated_by      TEXT NOT NULL,               -- 更新人 ID
+    updated_by_name TEXT DEFAULT '',             -- 更新人姓名
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    change_summary  TEXT DEFAULT '',             -- 变更摘要
+    old_content     TEXT DEFAULT '',             -- 变更前内容
+    new_content     TEXT DEFAULT ''              -- 变更后内容
+);
+CREATE INDEX idx_kh_knowledge ON knowledge_history(knowledge_id);
+CREATE INDEX idx_kh_time ON knowledge_history(updated_at);
+
 -- FTS5 全文搜索索引
 CREATE VIRTUAL TABLE knowledge_fts USING fts5(content, content=knowledge_files);
 ```
@@ -678,9 +726,13 @@ UPDATE service_tickets SET status = 'closed'     WHERE status IN ('resolved', 'c
 | DELETE | `/api/admin/tickets/<id>` | 删除工单 | BIZ-2 |
 | CRUD | `/api/admin/close-reasons` | 关单类型 | BIZ-3 |
 | CRUD | `/api/admin/systems` | 系统清单 | BIZ-4 |
-| CRUD | `/api/admin/knowledge` | 知识库管理 | BIZ-5 |
+| CRUD | `/api/admin/knowledge` | 知识库管理（含标签筛选） | BIZ-5 |
 | POST | `/api/admin/knowledge/<id>/approve` | **知识审核通过** | BIZ-5 |
 | POST | `/api/admin/knowledge/<id>/reject` | **知识审核驳回** | BIZ-5 |
+| GET | `/api/admin/knowledge/<id>/history` | **知识版本历史** | BIZ-5b |
+| GET | `/api/admin/knowledge/tags-stats` | **标签统计** | BIZ-5a |
+| PUT | `/api/agent/knowledge/<id>` | **工程师更新知识**（含标签） | F-AGENT-10 |
+| GET | `/api/agent/knowledge/<id>/history` | 工程师查看版本历史 | F-AGENT-10 |
 | GET | `/api/admin/stats/overview` | 仪表盘概览 | BIZ-7 |
 | GET | `/api/admin/stats/agents` | 工程师绩效 | BIZ-7 |
 | GET | `/api/admin/stats/interception` | **拦截率分析** | BIZ-7 |

@@ -676,12 +676,13 @@ class SmartCSTest:
     # ========================================================================== #
 
     def J_knowledge_submit(self):
-        """J1: 工程师提交知识"""
+        """J1: 工程师提交知识(含标签)"""
         r = self.api(self.agent, '/api/agent/tickets/knowledge', {
             'title': '蓝屏错误代码0x0000f4解决方法',
-            'content': '当Windows系统出现蓝屏错误代码0x0000f4时，通常表示硬盘故障...'
+            'content': '当Windows系统出现蓝屏错误代码0x0000f4时，通常表示硬盘故障...',
+            'tags': {'system_ids': ['sys1', 'sys2'], 'scenario': '蓝屏', 'category': ['硬件故障'], 'custom': ['紧急']}
         })
-        test('J1. 工程师提交知识', r and r.get('ok'), str(r)[:100] if r else '')
+        test('J1. 工程师提交知识(含标签)', r and r.get('ok'), str(r)[:100] if r else '')
         return r.get('knowledge_id') if r else None
 
     def J_knowledge_mine(self):
@@ -717,6 +718,40 @@ class SmartCSTest:
         """检视被驳回知识"""
         r = self.api(self.agent, '/api/agent/knowledge/mine', method='GET')
         test('J6. 被驳回知识可查看原因', r is not None, str(r)[:100])
+
+    def J_knowledge_tags(self):
+        """J7: 知识标签保存正确"""
+        r = self.api(self.agent, '/api/agent/tickets/knowledge', {
+            'title': '标签测试知识',
+            'content': '这是一条测试标签的知识条目',
+            'tags': {'system_ids': ['sys1'], 'scenario': '连接失败', 'category': ['网络问题'], 'custom': ['测试']}
+        })
+        kid = r.get('knowledge_id') if r else None
+        if kid:
+            r2 = self.api(self.agent, '/api/agent/knowledge/:id'.replace(':id', kid), method='GET')
+        else:
+            r2 = None
+        test('J7. 知识标签保存正确', r and r.get('ok'), str(r)[:100] if r else '')
+
+    def J_knowledge_update_history(self):
+        """J10: 更新知识产生历史记录"""
+        r = self.api(self.agent, '/api/agent/tickets/knowledge', {
+            'title': '历史测试知识',
+            'content': '原始内容'
+        })
+        kid = r.get('knowledge_id') if r else None
+        if kid:
+            # 更新
+            r2 = self.api(self.agent, '/api/agent/knowledge/:id'.replace(':id', kid), method='PUT', data={
+                'content': '更新后的内容',
+                'tags': {'scenario': '打印问题'}
+            })
+            # 查历史
+            r3 = self.api(self.agent, '/api/agent/knowledge/:id/history'.replace(':id', kid), method='GET')
+            has_history = r3 and len(r3) >= 1 if isinstance(r3, list) else bool(r3)
+            test('J10. 知识更新产生历史记录', has_history, str(r3)[:100] if r3 else 'no history')
+        else:
+            test('J10. 知识更新产生历史记录', False, 'no knowledge id')
 
     # ========================================================================== #
     #  O. 审计 (新增, 基于 E组扩展)
@@ -853,6 +888,8 @@ class SmartCSTest:
         self.J_knowledge_approve(kid)
         self.J_knowledge_searchable()
         self.J_knowledge_reject()
+        self.J_knowledge_tags()
+        self.J_knowledge_update_history()
 
         # ── Step 12: 审计日志 ──
         print("\n📋 O. 审计日志")
