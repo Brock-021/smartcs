@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SmartCS 集成测试脚本
-测试所有核心业务流程：用户咨询 → 转人工 → 客服回复 → 关闭工单
+测试所有核心业务流程：用户咨询 → 转人工 → IT工程师回复 → 关闭工单
 """
 
 import urllib.request, urllib.parse, json, http.cookiejar, sys, os, io, uuid

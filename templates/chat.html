@@ -258,7 +258,7 @@ body.logged-in .esc-bar .btn-resolved{display:none !important}
 <div class="agent-info" id="agentInfo">
   <div class="avatar" id="agentAvatar">客</div>
   <div class="detail">
-    <div class="nm"><span class="agent-online"></span><span id="agentName">对接客服</span></div>
+    <div class="nm"><span class="agent-online"></span><span id="agentName">对接IT工程师</span></div>
     <div class="dept" id="agentDept">技术支持</div>
   </div>
   <div class="tag">在线</div>
@@ -266,9 +266,9 @@ body.logged-in .esc-bar .btn-resolved{display:none !important}
 <div class="esc-bar" id="escBar">
   <div class="esc-status">
     <span class="dot"></span>
-    <span><strong>✅ 已对接人工客服</strong>，请描述您的问题</span>
+    <span><strong>✅ 已对接IT工程师</strong>，请描述您的问题</span>
   </div>
-  <div style="font-size:11px;color:#856404;margin-top:3px">直接发消息即可，客服回复自动显示在下方</div>
+  <div style="font-size:11px;color:#856404;margin-top:3px">直接发消息即可，IT工程师回复自动显示在下方</div>
   <button class="btn-resolved" id="resolvedBtn" onclick="showResolvedDialog()" style="display:inline-block">✓ 问题已解决</button>
   <!-- requestCloseBtn moved inline into chat flow -->
 </div>
@@ -522,7 +522,7 @@ function addMsg(content, role, time) {
   if (msgCache[key]) return;
   msgCache[key] = true;
   var speakerName = '';
-  if (role === 'agent') speakerName = '<div style="font-size:10px;color:#999;margin-bottom:2px">' + (getAgentName() || '客服') + '</div>';
+  if (role === 'agent') speakerName = '<div style="font-size:10px;color:#999;margin-bottom:2px">' + (getAgentName() || 'IT工程师') + '</div>';
   var d = document.createElement('div');
   d.className = 'msg ' + role;
   d.innerHTML = speakerName + content + '<span class="time">' + (time||new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})) + '</span>';
@@ -530,7 +530,7 @@ function addMsg(content, role, time) {
   document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
   if (role !== 'user') resetIdleTimer();
   // Check if this is a close request from agent - show button inline after message
-  if (role === 'system' && content.indexOf('客服请求关闭工单') >= 0 && !isResolved) {
+  if (role === 'system' && content.indexOf('IT工程师请求关闭工单') >= 0 && !isResolved) {
     var btn = document.createElement('button');
     btn.className = 'chat-action-btn close';
     btn.textContent = '📋 确认关闭并评价';
@@ -705,7 +705,7 @@ function requestHuman() {
   if (isEscalated || isResolved) return;
   var btn=document.getElementById('humanBtn');
   btn.disabled=true; btn.textContent='⏳ 转接中...';
-  addMsg('👤 我要求转接人工客服', 'user');
+  addMsg('👤 我要求转接IT工程师', 'user');
   showTyping();
   var xhr=new XMLHttpRequest();
   xhr.open('POST','/api/chat',true);
@@ -718,7 +718,7 @@ function requestHuman() {
       isEscalated=true;
       showEscalated();
       resetIdleTimer();
-      addMsg('✅ 已转接人工客服，请稍候...', 'system');
+      addMsg('✅ 已转接IT工程师，请稍候...', 'system');
     }catch(e){hideTyping();addMsg('⚠️ 转接失败','system');}
     btn.disabled=false;btn.textContent='👤 转人工';
   };
@@ -734,7 +734,7 @@ function showEscalated() {
   resetIdleTimer();
 }
 
-// ========== 轮询客服回复 ==========
+// ========== 轮询IT工程师回复 ==========
 function startPolling(){
   if(pollTimer) clearInterval(pollTimer);
   pollTimer=setInterval(pollMessages,3000);
@@ -834,7 +834,7 @@ function loadTickets(){
       var d=JSON.parse(xhr.responseText);
       var open=d.find(function(t){return t.status==='open'||t.status==='assigned'});
       if(open){currentTicketId=open.id;updateStatus(open.status);}
-      // 检查是否有待确认工单（说明客服已关闭）
+      // 检查是否有待确认工单（说明IT工程师已关闭）
       var confirmed=d.find(function(t){return t.status==='confirmed' && t.conversation_id===convId});
       if(confirmed && !isResolved){
         isResolved = true;
@@ -919,7 +919,7 @@ function showHistory() {
           '<div class="tk-info">' +
           '<div class="tk-num">' + (t.ticket_number || '#' + t.id.substring(0,8)) + '</div>' +
           '<div class="tk-issue">' + issue + '</div>' +
-          (agent ? '<div style="font-size:11px;color:#888">客服: ' + agent + rating + '</div>' : '') +
+          (agent ? '<div style="font-size:11px;color:#888">IT工程师: ' + agent + rating + '</div>' : '') +
           '</div>' +
           '<span class="tk-status ' + t.status + '">' + (statusMap[t.status] || t.status) + '</span></div>';
       }
@@ -944,7 +944,7 @@ if (window.Notification && Notification.permission === 'default') {
   Notification.requestPermission();
 }
 
-addMsg('您好！我是智能客服 🤖<br><br><strong>请问有什么可以帮您？</strong><br>• 咨询产品或服务<br>• 查询常见问题<br>• 了解业务流程<br><br>如果解决不了，请点击下方的 <strong>"转人工"</strong> 按钮，我将为您对接人工客服。', 'bot');
+addMsg('您好！我是智能客服 🤖<br><br><strong>请问有什么可以帮您？</strong><br>• 咨询产品或服务<br>• 查询常见问题<br>• 了解业务流程<br><br>如果解决不了，请点击下方的 <strong>"转人工"</strong> 按钮，我将为您对接IT工程师。', 'bot');
 
 
 // ========== 检查登录状态
@@ -1372,7 +1372,7 @@ function loadMyTickets() {
           '<div class="tk-time">' + (t.created_at || '').substring(0, 10) + ' · ' + (t.ticket_number || '') + '</div>' +
           '<div class="tk-detail"><div class="row"><span class="label">编号:</span><span class="value">' + (t.ticket_number || t.id.substring(0,12)) + '</span></div>' +
           '<div class="row"><span class="label">描述:</span><span class="value">' + escapeHtml(t.issue_description || '(无描述)').substring(0, 60) + '</span></div>' +
-          (t.agent_display ? '<div class="row"><span class="label">客服:</span><span class="value">' + escapeHtml(t.agent_display) + '</span></div>' : '') +
+          (t.agent_display ? '<div class="row"><span class="label">IT工程师:</span><span class="value">' + escapeHtml(t.agent_display) + '</span></div>' : '') +
           '<div class="row"><span class="label">时间:</span><span class="value">' + escapeHtml(t.created_at || '') + '</span></div>' +
           (t.customer_rating > 0 ? '<div class="row"><span class="label">评价:</span><span class="value">' + '⭐'.repeat(t.customer_rating) + (t.customer_feedback ? ' - ' + escapeHtml(t.customer_feedback.substring(0,40)) : '') + '</span></div>' : '') +
           '</div></div>';
@@ -1438,7 +1438,7 @@ function loadProfilePageData() {
             '<div class="info-row"><span class="label">手机:</span><span class="value">' + (phone || '未填写') + '</span></div>' +
             '<div class="info-row"><span class="label">公司:</span><span class="value">' + (company || '未填写') + '</span></div>' +
             '<div class="info-row"><span class="label">邮箱:</span><span class="value">' + email + '</span></div>' +
-            (agentName ? '<div class="info-row"><span class="label">客服:</span><span class="value">' + agentName + (agentDept ? ' · ' + agentDept : '') + '</span></div>' : '') +
+            (agentName ? '<div class="info-row"><span class="label">IT工程师:</span><span class="value">' + agentName + (agentDept ? ' · ' + agentDept : '') + '</span></div>' : '') +
             '</div>' +
             '<div style="display:flex;gap:6px">' +
             '<button onclick="document.getElementById(\'profilePageModal\').style.display=\'none\';showHistory()" style="flex:1;padding:8px;background:#e3f2fd;color:var(--primary-color);border:none;border-radius:8px;cursor:pointer;font-size:12px">📋 报修记录</button>' +
@@ -1521,7 +1521,7 @@ function doRepairSearch() {
           '<div class="tk-detail" style="display:none;margin-top:4px;padding:6px 8px;background:#f9f9f9;border-radius:6px;font-size:11px;line-height:1.6">' +
           '<div><span style="color:#888">编号:</span> ' + escapeHtml(tkNo) + '</div>' +
           '<div><span style="color:#888">描述:</span> ' + escapeHtml(t.issue_description || '(无)') + '</div>' +
-          (agentName ? '<div><span style="color:#888">客服:</span> ' + escapeHtml(agentName) + '</div>' : '') +
+          (agentName ? '<div><span style="color:#888">IT工程师:</span> ' + escapeHtml(agentName) + '</div>' : '') +
           '<div><span style="color:#888">时间:</span> ' + escapeHtml(t.created_at || '') + '</div>' +
           (t.customer_rating > 0 ? '<div><span style="color:#888">评价:</span> ' + '⭐'.repeat(t.customer_rating) + '</div>' : '') +
           '</div></div>';
@@ -1587,7 +1587,7 @@ function renderMyTicketsInModal() {
           '<div class="tk-detail2" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid #f0f0f0;font-size:12px;line-height:1.6;color:#555">' +
           '<div><span style="color:#888">编号:</span> ' + escapeHtml(tkNo) + '</div>' +
           '<div><span style="color:#888">描述:</span> ' + escapeHtml(t.issue_description || '(无)') + '</div>' +
-          (t.agent_display ? '<div><span style="color:#888">客服:</span> ' + escapeHtml(t.agent_display) + '</div>' : '') +
+          (t.agent_display ? '<div><span style="color:#888">IT工程师:</span> ' + escapeHtml(t.agent_display) + '</div>' : '') +
           '<div><span style="color:#888">创建:</span> ' + escapeHtml(t.created_at || '') + '</div>' +
           (t.resolved_at ? '<div><span style="color:#888">解决:</span> ' + escapeHtml(t.resolved_at) + '</div>' : '') +
           (t.customer_rating > 0 ? '<div><span style="color:#888">评价:</span> ' + '⭐'.repeat(t.customer_rating) + '</div>' : '') +

@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="{{ brand_short }}">
-<title>📋 客服工作台 - {{ brand_name }}</title>
+<title>📋 工程师工作台 - {{ brand_name }}</title>
 <style>
 :root {
   --primary-color: {{ brand_primary_color }};
@@ -142,7 +142,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 </head>
 <body>
 <div class="header">
-  <h1>📋 客服工作台</h1>
+  <h1>📋 工程师工作台</h1>
   <div class="user">
     <span id="agentName">{{ agent_name }}</span>
     <script>
@@ -234,7 +234,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div class="close-overlay" id="transferDialog">
   <div class="close-modal">
     <h3>↔️ 转交工单</h3>
-    <p style="font-size:12px;color:#666;margin-bottom:10px">选择接收该工单的客服或工程师：</p>
+    <p style="font-size:12px;color:#666;margin-bottom:10px">选择接收该工单的IT工程师或工程师：</p>
     <div id="transferAgentList" style="max-height:200px;overflow-y:auto;margin-bottom:10px">
       <div style="text-align:center;color:#999;padding:15px">加载中...</div>
     </div>
@@ -582,7 +582,7 @@ function loadTickets() {
             osc.start(); osc.stop(ctx.currentTime + 0.6);
           } catch(e){}
           document.title = '🔔 新工单';
-          setTimeout(function(){ document.title = '📋 客服工作台'; }, 4000);
+          setTimeout(function(){ document.title = '📋 工程师工作台'; }, 4000);
         } catch(e) {}
       }
       prevPendingCount = d.length;
@@ -622,7 +622,7 @@ function escapeHtml(s) {
   return s.replace(/</g,'&lt;').replace(/>/g,'&gt;');
 };
 
-function getAgentName() { return document.querySelector('.header .user-name') ? document.querySelector('.header .user-name').textContent : '客服'; }
+function getAgentName() { return document.querySelector('.header .user-name') ? document.querySelector('.header .user-name').textContent : 'IT工程师'; }
 function getCustomerName() { var el = document.getElementById('custInfoName'); return el ? el.textContent : '客户'; }
 function selectTicket(tkId, convId, status) {
   currentTicketId = tkId;
@@ -723,7 +723,7 @@ function loadConversation(convId, tkId) {
   xhr.onload = function() {
     try {
       var msgs = JSON.parse(xhr.responseText);
-      var labels = {user:'用户', bot:'AI', agent:'客服', system:'系统'};
+      var labels = {user:'用户', bot:'AI', agent:'IT工程师', system:'系统'};
       var html = '';
       for (var i = 0; i < msgs.length; i++) {
         var m = msgs[i];
@@ -760,7 +760,7 @@ function loadConversationSilent(convId) {
   xhr.onload = function() {
     try {
       var msgs = JSON.parse(xhr.responseText);
-      var labels = {user:'用户', bot:'AI', agent:'客服', system:'系统'};
+      var labels = {user:'用户', bot:'AI', agent:'IT工程师', system:'系统'};
       var html = '';
       for (var i = 0; i < msgs.length; i++) {
         var m = msgs[i];
@@ -901,7 +901,7 @@ function showTransferDialog() {
     try {
       var agents = JSON.parse(xhr.responseText);
       if (!agents || agents.length === 0) {
-        document.getElementById('transferAgentList').innerHTML = '<div style="text-align:center;padding:20px;color:#999">暂无其他在线客服可转交</div>';
+        document.getElementById('transferAgentList').innerHTML = '<div style="text-align:center;padding:20px;color:#999">暂无其他在线IT工程师可转交</div>';
         return;
       }
       var html = '';
@@ -941,7 +941,7 @@ function selectTransferAgent(el, aid) {
   el.style.background = '#fff3e0';
 }
 function confirmTransfer() {
-  if (!transferTargetId) { alert('请选择要转交的客服'); return; }
+  if (!transferTargetId) { alert('请选择要转交的IT工程师'); return; }
   if (!currentTicketId) { alert('请先选择工单'); return; }
   var btn = document.getElementById('confirmTransferBtn');
   btn.disabled = true;

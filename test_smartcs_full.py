@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SmartCS v4.0 全功能集成测试脚本
-覆盖：用户端(AI/人工/转接/工单)、注册登录、客服端、管理后台、系统配置
+覆盖：用户端(AI/人工/转接/工单)、注册登录、工程师端、管理后台、系统配置
 
 运行: python3 test_smartcs_full.py
 """
@@ -266,18 +266,18 @@ class SmartCSTest:
         test('C11. 登出后用户状态为未登录', r and not r.get('logged_in'), str(r)[:100])
 
     # ========================================================================== #
-    #  D. 客服端 (Agent Console)
+    #  D. 工程师端 (Agent Console)
     # ========================================================================== #
 
     def test_agent_login(self):
         """Agent login"""
         r = self.api(self.agent, '/agent/login', {'email': AGENT_EMAIL, 'password': AGENT_PASS})
-        test('D1. 客服登录', r and r.get('ok'), str(r)[:100])
+        test('D1. 工程师登录', r and r.get('ok'), str(r)[:100])
 
     def test_agent_logout(self):
         """Agent logout"""
         r = self.api(self.agent, '/agent/logout', {})
-        test('D2. 客服登出', True, '')
+        test('D2. IT工程师登出', True, '')
 
     def test_agent_pending_tickets(self):
         """List pending tickets"""
@@ -316,12 +316,12 @@ class SmartCSTest:
     def test_agent_load_conversation(self, conv_id):
         """Agent loads conversation"""
         r = self.api(self.agent, f'/api/agent/conversation/{conv_id}', method='GET')
-        test('D8. 客服加载对话', r is not None and len(r) >= 2, str(len(r or [])))
+        test('D8. IT工程师加载对话', r is not None and len(r) >= 2, str(len(r or [])))
 
     def test_agent_ticket_detail(self, tk_id):
         """Agent loads ticket detail"""
         r = self.api(self.agent, f'/api/agent/tickets/{tk_id}', method='GET')
-        test('D9. 客服查看工单详情', r and r.get('customer_name'), str(r)[:100])
+        test('D9. IT工程师查看工单详情', r and r.get('customer_name'), str(r)[:100])
 
     def test_agent_send_reply(self, conv_id):
         """Agent sends reply to customer"""
@@ -329,16 +329,16 @@ class SmartCSTest:
             'conversation_id': conv_id,
             'content': '您好，请问蓝屏显示什么错误代码？'
         })
-        test('D10. 客服发送回复', r and r.get('ok'), str(r)[:100])
+        test('D10. IT工程师发送回复', r and r.get('ok'), str(r)[:100])
 
     def test_user_gets_agent_reply(self, conv_id):
         """User polls history - sees agent message"""
         r = self.api(self.user, f'/api/chat/history?conversation_id={conv_id}', method='GET')
         if r:
             agent_msgs = [m for m in r if m['role'] == 'agent']
-            test('D11. 用户收到客服回复', len(agent_msgs) >= 1, '')
+            test('D11. 用户收到IT工程师回复', len(agent_msgs) >= 1, '')
         else:
-            test('D11. 用户收到客服回复', False, 'no history')
+            test('D11. 用户收到IT工程师回复', False, 'no history')
 
     def test_agent_request_close(self, tk_id):
         """Agent resolves ticket (processing → resolved)"""
@@ -346,7 +346,7 @@ class SmartCSTest:
             'ticket_id': tk_id,
             'resolution_notes': '已远程协助解决蓝屏问题'
         })
-        test('D12. 客服请求关闭工单', r and r.get('ok'), str(r)[:100])
+        test('D12. IT工程师请求关闭工单', r and r.get('ok'), str(r)[:100])
 
     def test_user_gets_close_msg(self, conv_id):
         """User sees the close request"""
@@ -378,7 +378,7 @@ class SmartCSTest:
             'close_reason': '已解决',
             'resolution_notes': '客户确认问题已解决'
         })
-        test('D16. 客服最终关闭工单', (r and r.get('ok')) or (r and r.get('error')), str(r)[:100])
+        test('D16. IT工程师最终关闭工单', (r and r.get('ok')) or (r and r.get('error')), str(r)[:100])
 
     def test_ticket_status(self, tk_id):
         """Check ticket status is closed/resolved"""
@@ -421,7 +421,7 @@ class SmartCSTest:
     def test_admin_agents_list(self):
         """Admin lists agents"""
         r = self.api(self.admin, '/api/admin/agents', method='GET')
-        test('E5. 管理员查看客服列表', r is not None, str(r)[:100])
+        test('E5. 管理员查看工程师列表', r is not None, str(r)[:100])
 
     def test_admin_customers_list(self):
         """Admin lists customers"""
@@ -636,7 +636,7 @@ class SmartCSTest:
             'title': title,
             'content': content
         })
-        test('F8. 客服提交知识条目', r is not None and r.get('ok'), str(r)[:100])
+        test('F8. IT工程师提交知识条目', r is not None and r.get('ok'), str(r)[:100])
         if r and r.get('knowledge_id'):
             kid = r['knowledge_id']
             # Verify has initial history
@@ -786,7 +786,7 @@ class SmartCSTest:
         # ──────────────────────────────────────────────────────
         # Group D: Agent Console
         # ──────────────────────────────────────────────────────
-        print("\n📋 D. 客服端流程")
+        print("\n📋 D. 工程师端流程")
         self.test_agent_login()
         self.test_agent_pending_tickets()
         self.test_agent_all_tickets()

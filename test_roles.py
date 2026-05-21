@@ -97,7 +97,7 @@ def run_tests():
     r = t.post('/api/admin/auth-providers', {'name':'test','provider_type':'ldap','config':{}})
     test('sysadmin 不能创建认证提供者', isinstance(r, dict) and 'error' in r, str(r))
     r = t.get('/api/admin/agents')
-    test('sysadmin 可以查看客服列表', isinstance(r, list), str(type(r)))
+    test('sysadmin 可以查看工程师列表', isinstance(r, list), str(type(r)))
     r = t.get('/api/admin/config')
     test('sysadmin 可以访问系统配置', isinstance(r, dict) and not r.get('error'), str(type(r)))
 
@@ -111,7 +111,7 @@ def run_tests():
     r = t.post('/api/admin/auth-providers', {'name':'test-ldap','provider_type':'ldap','config':{}})
     test('secadmin 可以创建认证提供者', isinstance(r, dict) and r.get('ok'), str(r))
     r = t.get('/api/admin/agents')
-    test('secadmin 可以查看客服列表', isinstance(r, list), str(type(r)))
+    test('secadmin 可以查看工程师列表', isinstance(r, list), str(type(r)))
     r = t.get('/api/admin/config')
     test('secadmin 不能访问系统配置', isinstance(r, dict) and r.get('error'), str(r))
 
@@ -127,9 +127,9 @@ def run_tests():
     r = t.get('/api/admin/analytics')
     test('audadmin 可以查看数据分析', not r.get('error'), str(r))
     r = t.get('/api/admin/agents')
-    test('audadmin 不能查看客服列表', isinstance(r, dict) and 'error' in r, str(r))
+    test('audadmin 不能查看工程师列表', isinstance(r, dict) and 'error' in r, str(r))
     r = t.delete('/api/admin/agents/fake-id')
-    test('audadmin 不能删除客服', isinstance(r, dict) and ('权限' in json.dumps(r) or 'error' in r), str(r))
+    test('audadmin 不能删除工程师', isinstance(r, dict) and ('权限' in json.dumps(r) or 'error' in r), str(r))
 
     # ---- 5. 删除保护 ----
     print('\n📋 5. 删除保护')
@@ -162,7 +162,7 @@ def run_tests():
     r = t.get('/api/admin/security-config')
     test('superadmin 可以查看安全配置', isinstance(r, dict) and not r.get('error'), str(type(r)))
     r = t.get('/api/admin/agents')
-    test('superadmin 可以查看客服列表', isinstance(r, list), str(type(r)))
+    test('superadmin 可以查看工程师列表', isinstance(r, list), str(type(r)))
     r = t.post('/api/admin/auth-providers', {'name':'super-test','provider_type':'ldap','config':{}})
     test('superadmin 可以创建认证提供者', isinstance(r, dict) and r.get('ok'), str(r))
     r = t.post('/api/admin/config', {'api_key':'test'})

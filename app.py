@@ -630,10 +630,10 @@ def _send_im_event_notification(event_type: str, ticket_data: dict):
     
     # Build notification content based on event_type
     messages = {
-        'ticket.processing': '🔔 新工单进入处理队列，等待客服处理。',
+        'ticket.processing': '🔔 新工单进入处理队列，等待IT工程师处理。',
         'ticket.assigned': '📋 您有一个新分配的工单需要处理。',
         'ticket.resolved': '🔧 工单已解决，等待客户确认评价。',
-        'ticket.rated': '⭐ 客户已完成评价，等待客服最终关闭。',
+        'ticket.rated': '⭐ 客户已完成评价，等待IT工程师最终关闭。',
         'ticket.closed': '✅ 工单已关闭。',
     }
     content = messages.get(event_type, f'工单更新: {event_type}')
@@ -1153,7 +1153,7 @@ def init_db():
         db.execute("INSERT OR IGNORE INTO agents(id,name,email,password_hash,role) VALUES(?,?,?,?,?)",
                    ('admin-001', '管理员', 'admin@smartcs.com', pwd_hash, 'superadmin'))
         db.execute("INSERT OR IGNORE INTO agents(id,name,email,password_hash,role) VALUES(?,?,?,?,?)",
-                   ('agent-001', '客服01', 'agent@smartcs.com', pwd_hash, 'agent'))
+                   ('agent-001', '工程师01', 'agent@smartcs.com', pwd_hash, 'agent'))
         for _lvl_id, _lvl_name, _lvl_email, _lvl_level, _lvl_display, _lvl_title in [
             ('agent-l1', 'L1工程师', 'agent_l1@smartcs.com', 1, 'L1工程师', '初级工程师'),
             ('agent-l2', 'L2工程师', 'agent_l2@smartcs.com', 2, 'L2工程师', '高级工程师'),
@@ -1165,7 +1165,7 @@ def init_db():
             db.execute("INSERT OR IGNORE INTO agent_profiles(id,agent_id,display_name,department,title,agent_level) VALUES(?,?,?,?,?,?)",
                        (f'ap-{_lvl_id}', _lvl_id, _lvl_display, '技术支持', _lvl_title, _lvl_level))
         db.execute("INSERT OR IGNORE INTO agent_profiles(id,agent_id,display_name,department,title) VALUES(?,?,?,?,?)",
-                   ('ap-001', 'agent-001', '客服小张', '技术支持', '高级客服'))
+                   ('ap-001', 'agent-001', '工程师小张', '技术支持', '高级工程师'))
 
         for i, nm in enumerate(['系统问题','咨询问题','功能建议','售后问题','其他']):
             db.execute("INSERT OR IGNORE INTO close_reasons(id,name,sort_order) VALUES(?,?,?)",
@@ -1435,7 +1435,7 @@ def _log_webhook_delivery(webhook_id, event_type, payload, status, status_code, 
 
 # ====== End Phase 4 Webhooks ======
 
-SYSTEM_PROMPT = """你是一个专业的智能客服助手。只根据知识库内容回答。回答要简洁友好。如果没有相关知识，告诉用户当前知识库中没有相关信息，并提示用户可点击"转人工"按钮联系人工客服。"""
+SYSTEM_PROMPT = """你是一个专业的智能客服助手。只根据知识库内容回答。回答要简洁友好。如果没有相关知识，告诉用户当前知识库中没有相关信息，并提示用户可点击"转人工"按钮联系IT工程师。"""
 
 @app.route('/')
 def index(): return render_template('chat.html')
@@ -1469,7 +1469,7 @@ def manifest():
 def service_worker():
     cfg = get_brand_config()
     logo_path = cfg.get('brand_logo_path', '/static/icon-192.png')
-    sw_content = """const CACHE_NAME = 'smartcs-v2';
+    sw_content = """const CACHE_NAME = 'smartcs-v4.1';
 const urlsToCache = [
   '%s'
 ];
@@ -1553,7 +1553,7 @@ def chat():
         existing_ticket = {'id': tk_id, 'status': 'created'}
 
     # Handle transfer to human
-    is_transfer = '转人工' in msg or '转接人工' in msg or '人工客服' in msg
+    is_transfer = '转人工' in msg or '转接人工' in msg or 'IT工程师' in msg
     if is_transfer:
         if existing_ticket:
             tk_id = existing_ticket['id']
@@ -1571,13 +1571,13 @@ def chat():
                        (tk_id, conv_id, cid, msg[:200], tk_number))
         get_db().execute("UPDATE conversations SET status='escalated',updated_at=datetime('now','localtime') WHERE id=?", (conv_id,))
         db.commit()
-        return jsonify({'reply':'✅ 已为您转接人工客服，请稍候...','escalated':True,'conversation_id':conv_id})
+        return jsonify({'reply':'✅ 已为您转接IT工程师，请稍候...','escalated':True,'conversation_id':conv_id})
 
     # If already escalated, skip AI - just relay message to agent
     if conv and conv['status'] == 'escalated':
         db.execute("UPDATE conversations SET updated_at=datetime('now','localtime') WHERE id=?", (conv_id,))
         db.commit()
-        return jsonify({'reply':'📝 消息已发送给客服，请等待回复...','conversation_id':conv_id,'escalated':True})
+        return jsonify({'reply':'📝 消息已发送给IT工程师，请等待回复...','conversation_id':conv_id,'escalated':True})
 
     knowledge = search_knowledge(msg)
     msgs = [{'role':'system','content':SYSTEM_PROMPT}]
@@ -1853,7 +1853,7 @@ def customer_confirm():
     db.execute("UPDATE conversations SET status='resolved',updated_at=datetime('now','localtime') WHERE id=(SELECT conversation_id FROM service_tickets WHERE id=?)", (tk_id,))
     conv = db.execute("SELECT conversation_id FROM service_tickets WHERE id=?", (tk_id,)).fetchone()
     if conv:
-        msg_text = '✅ 客户已确认问题已解决，等待客服最终关闭。'
+        msg_text = '✅ 客户已确认问题已解决，等待IT工程师最终关闭。'
         db.execute("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)",
                          (gen_id('msg-'), conv['conversation_id'], 'system', msg_text))
         db.execute("UPDATE conversations SET updated_at=datetime('now','localtime') WHERE id=?", (conv['conversation_id'],))
@@ -1892,7 +1892,7 @@ def customer_rate():
         stars = '⭐' * rating + '☆' * (5 - rating)
         fb = (' 反馈：' + feedback) if feedback else ''
         detail = f'{stars}/5' + fb
-        msg_text = '✅ 客户已评价，' + detail + '，等待客服最终关闭。'
+        msg_text = '✅ 客户已评价，' + detail + '，等待IT工程师最终关闭。'
         db.execute("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)",
                          (gen_id('msg-'), conv['conversation_id'], 'system', msg_text))
         db.execute("UPDATE conversations SET updated_at=datetime('now','localtime') WHERE id=?", (conv['conversation_id'],))
@@ -1971,7 +1971,7 @@ def customer_selfclose():
         stars = '⭐' * rating + '☆' * (5 - rating)
         fb = (' 📝 反馈：' + feedback) if feedback else ''
         detail = f'{stars}/5' + fb
-        msg_text = f'✅ 工单已评价 {detail}，等待客服最终关闭。'
+        msg_text = f'✅ 工单已评价 {detail}，等待IT工程师最终关闭。'
         db.execute("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)",
                          (gen_id('msg-'), conv['conversation_id'], 'system', msg_text))
         db.execute("UPDATE conversations SET updated_at=datetime('now','localtime') WHERE id=?", (conv['conversation_id'],))
@@ -2007,7 +2007,7 @@ def conversation_auto_close():
     # 构建摘要
     summary_parts = []
     for m in msgs:
-        role_label = {'user':'用户','bot':'AI','agent':'客服'}.get(m['role'], m['role'])
+        role_label = {'user':'用户','bot':'AI','agent':'IT工程师'}.get(m['role'], m['role'])
         content = m['content'][:150]
         summary_parts.append(f"[{role_label}] {content}")
     
@@ -2057,7 +2057,7 @@ def customer_agent_info():
         WHERE b.customer_id=? AND b.status='active'""", (cid,)).fetchone()
     return jsonify(dict(info) if info else {'bound':False})
 
-# ====== 客服工作台 ======
+# ====== 工程师工作台 ======
 @app.route('/agent/login', methods=['GET','POST'])
 def agent_login():
     if request.method == 'GET':
@@ -2099,7 +2099,7 @@ def agent_login():
 @app.route('/agent/logout', methods=['POST'])
 def agent_logout():
     aid = session.pop('agent_id', None)
-    name = session.get('agent_name', '客服')
+    name = session.get('agent_name', 'IT工程师')
     if aid:
         log_audit('', 'agent.logout', aid, name, {})
         get_db().execute("UPDATE agents SET status='offline' WHERE id=?", (aid,)); get_db().commit()
@@ -2268,7 +2268,7 @@ def agent_close():
     db.execute("UPDATE service_tickets SET level=? WHERE id=?", (closing_level, tk_id))
     if status == 'rated':
         ok, msg = transition_ticket(tk_id, 'closed', session.get('agent_id',''), session.get('agent_name',''),
-                                    {'resolution_notes': notes, 'close_reason': close_reason or '客服关闭工单'})
+                                    {'resolution_notes': notes, 'close_reason': close_reason or '工程师关闭工单'})
         if not ok:
             return jsonify({'error':msg}),400
     elif status in ('created', 'processing', 'resolved'):
@@ -2299,12 +2299,12 @@ def agent_resolve():
         return jsonify({'error':f'当前状态不允许解决（{t["status"]}）'}),400
     conv_id = t['conversation_id']
     ok, msg = transition_ticket(tk_id, 'resolved', session.get('agent_id',''), session.get('agent_name',''),
-                                {'resolution_notes': notes, 'close_reason': '客服解决'})
+                                {'resolution_notes': notes, 'close_reason': '工程师解决'})
     if not ok:
         return jsonify({'error':msg}),400
     db.execute("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)",
                (gen_id('msg-'), conv_id, 'system',
-                '【客服已解决工单】请问还有其他问题吗？如果没有，请确认并评价。'))
+                '【工程师已解决工单】请问还有其他问题吗？如果没有，请确认并评价。'))
     db.execute("UPDATE conversations SET updated_at=datetime('now','localtime') WHERE id=?", (conv_id,))
     db.commit()
     return jsonify({'ok':True})
@@ -2490,7 +2490,7 @@ def admin_delete_customer(cid):
               {'customer_id': cid})
     return jsonify({'ok': True, 'message': '客户已删除'})
 
-# 客服管理
+# 工程师管理
 
 @app.route('/api/admin/audit-logs', methods=['GET'])
 @audadmin_required
@@ -2593,7 +2593,7 @@ def admin_add_agent():
 @app.route('/api/admin/agents/<aid>', methods=['DELETE'])
 @csrf_protect
 def admin_delete_agent(aid):
-    # 三员管理：删除客服归安全管理员
+    # 三员管理：删除工程师归安全管理员
     if not session.get('agent_id'):
         return jsonify({'error':'未登录'}),401
     role = session.get('agent_role', '')
@@ -3561,7 +3561,7 @@ def admin_test_external_adapter(eid):
     return jsonify({'ok': False, 'message': msg})
 
 
-# ====== 缺陷操作（客服端） ======
+# ====== 缺陷操作（工程师端） ======
 
 @app.route('/api/agent/tickets/<ticket_id>/external-links', methods=['GET'])
 @logged_in_required
@@ -4516,13 +4516,13 @@ def auth_ldap_login():
         get_db().execute('UPDATE auth_identity_mappings SET last_login_at=datetime(\'now\',\'localtime\') WHERE id=?',
                          (mapping['id'],))
     else:
-        # 尝试按邮箱匹配已有客服
+        # 尝试按邮箱匹配已有IT工程师
         email = result.get('email', '')
         agent = None
         if email:
             agent = get_db().execute('SELECT id FROM agents WHERE email=?', (email,)).fetchone()
         if not agent:
-            # 创建临时客服账号
+            # 创建临时IT工程师账号
             aid = 'auth-agent-' + uuid.uuid4().hex[:8]
             display = result.get('display_name', result['username'])
             pwd_hash = hashlib.sha256(f'admin:{uuid.uuid4().hex[:12]}'.encode()).hexdigest()
@@ -4743,7 +4743,7 @@ if __name__ == '__main__':
     os.makedirs(os.path.join(BASE_DIR,'data'),exist_ok=True)
     os.makedirs(os.path.join(BASE_DIR,"uploads"),exist_ok=True)
     print(f"🚀 SmartCS v3.0 启动")
-    print(f"   💬 客服端: http://localhost:5000/")
+    print(f"   💬 工程师端: http://localhost:5000/")
     print(f"   👤 登录页: http://localhost:5000/agent/login")
     print(f"   📊 工作台: http://localhost:5000/agent/dashboard")
     print(f"   ⚙️  后台: http://localhost:5000/admin/dashboard")
