@@ -2127,11 +2127,11 @@ function loadLevelNamesCache(callback) {
     try {
       var d = JSON.parse(xhr.responseText);
       _levelNamesCache = JSON.parse(d.level_names || '{}');
-    } catch(e) { _levelNamesCache = {'1':'初级工程师','2':'高级工程师','3':'专家工程师','4':'首席工程师'}; }
+    } catch(e) { _levelNamesCache = {'1':'L1工程师','2':'L2工程师','3':'L3工程师','4':'L4工程师'}; }
     if (callback) callback(_levelNamesCache);
   };
   xhr.onerror = function() {
-    _levelNamesCache = {'1':'初级工程师','2':'高级工程师','3':'专家工程师','4':'首席工程师'};
+    _levelNamesCache = {'1':'L1工程师','2':'L2工程师','3':'L3工程师','4':'L4工程师'};
     if (callback) callback(_levelNamesCache);
   };
   xhr.send();

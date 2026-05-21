@@ -17,3 +17,4 @@ knowledge/Test_Agent_Submit_*
 knowledge/test_*
 knowledge/Test_Agent_Submit_*
 .pytest_cache/
+test_unit.py

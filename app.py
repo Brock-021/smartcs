@@ -1171,7 +1171,7 @@ def init_db():
             db.execute("INSERT OR IGNORE INTO close_reasons(id,name,sort_order) VALUES(?,?,?)",
                        (f'cr-{uuid.uuid4().hex[:8]}', nm, i))
         default_cfg = {'api_base_url':API_BASE_URL,'api_key':DASHSCOPE_API_KEY or '','model_name':MODEL_NAME,'admin_password':ADMIN_PASSWORD,'webhook_timeout':'10','auto_close_min':'20','auto_rate_hours':'24','ticket_search_max_days':'365',
-                       'level_names': json.dumps({'1':'初级工程师','2':'高级工程师','3':'专家工程师','4':'首席工程师'}, ensure_ascii=False)}
+                       'level_names': json.dumps({'1':'L1工程师','2':'L2工程师','3':'L3工程师','4':'L4工程师'}, ensure_ascii=False)}
         for k, v in default_cfg.items():
             db.execute("INSERT OR IGNORE INTO system_config(key,value) VALUES(?,?)", (k, v))
         # 安全配置键
@@ -2110,7 +2110,7 @@ def agent_logout():
 def agent_dashboard():
     prof = get_db().execute("SELECT agent_level FROM agent_profiles WHERE agent_id=?", (session['agent_id'],)).fetchone()
     cfg = get_db().execute("SELECT value FROM system_config WHERE key='level_names'").fetchone()
-    level_names = json.loads(cfg['value']) if cfg and cfg['value'] else {'1':'初级工程师','2':'高级工程师','3':'专家工程师','4':'首席工程师'}
+    level_names = json.loads(cfg['value']) if cfg and cfg['value'] else {'1':'L1工程师','2':'L2工程师','3':'L3工程师','4':'L4工程师'}
     return render_template('agent_dashboard.html',
         agent_name=session.get('agent_name',''),
         agent_role=session.get('agent_role',''),
