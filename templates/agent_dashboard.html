@@ -25,7 +25,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .main{flex:1;display:flex;overflow:hidden}
 .sidebar{width:300px;background:#fff;border-right:1px solid #e0e0e0;display:flex;flex-direction:column}
 .tabs{display:flex;border-bottom:2px solid #e0e0e0}
-.tab{flex:1;text-align:center;padding:8px 4px;font-size:12px;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;margin-bottom:-2px;color:#666}
+.tab{flex:1;text-align:center;padding:8px 4px;font-size:12px;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;margin-bottom:-2px;color:#94a3b8}
 .tab.active{color:var(--primary-color);border-bottom-color:var(--primary-color);font-weight:500}
 .tab .count{display:inline-block;background:#ff5252;color:#fff;font-size:10px;padding:0 5px;border-radius:8px;margin-left:3px}
 .ticket-list{flex:1;overflow-y:auto}
@@ -34,17 +34,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .ticket.active{background:#e3f2fd;border-left:3px solid var(--primary-color)}
 .ticket .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
 .ticket .customer{font-size:13px;font-weight:500;color:#333}
-.ticket .ticket-no{font-size:10px;color:#999;font-family:monospace}
+.ticket .ticket-no{font-size:10px;color:#94a3b8;font-family:monospace}
 .ticket .badge{font-size:10px;padding:1px 6px;border-radius:4px;color:#fff}
 .badge.created{background:#9e9e9e}
 .badge.processing{background:#ff9800}
 .badge.resolved{background:#43a047}
 .badge.rated{background:var(--primary-color)}
 .badge.closed{background:#999}
-.ticket .preview{font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ticket .time{font-size:10px;color:#bbb;margin-top:2px}
+.ticket .preview{font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ticket .time{font-size:10px;color:#64748b;margin-top:2px}
 .chat-area{flex:1;display:flex;flex-direction:column}
-.placeholder{flex:1;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;flex-direction:column;gap:8px}
+.placeholder{flex:1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;flex-direction:column;gap:8px}
 .placeholder .icon{font-size:40px}
 .cust-info{background:#fff;border-bottom:1px solid #e0e0e0;padding:8px 16px;display:none;font-size:12px}
 .cust-info .row{display:flex;gap:16px;flex-wrap:wrap}
@@ -56,7 +56,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .msg.user{align-self:flex-end;background:var(--primary-color);color:#fff;border-bottom-right-radius:3px}
 .msg.bot{align-self:flex-start;background:#fff;color:#333;border-bottom-left-radius:3px;box-shadow:0 1px 2px rgba(0,0,0,0.06)}
 .msg.agent{align-self:flex-start;background:#e3f2fd;color:#1565c0;border-bottom-left-radius:3px;border-left:2px solid var(--primary-color)}
-.msg .meta{font-size:10px;color:#999;margin-top:2px;display:block}
+.msg .meta{font-size:10px;color:#94a3b8;margin-top:2px;display:block}
 .reply-area{background:#fff;padding:8px 12px;border-top:1px solid #e0e0e0;display:none;gap:6px;align-items:flex-end}
 .reply-area textarea{flex:1;border:1px solid #ddd;border-radius:16px;padding:7px 12px;font-size:13px;resize:none;max-height:50px;outline:none;font-family:inherit}
 .reply-area textarea:focus{border-color:var(--primary-color)}
@@ -91,7 +91,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .cust-info.collapsed .cust-info-toggle{display:block}
 
 /* 下拉刷新提示 */
-.agent-ptr{display:none;text-align:center;padding:8px;font-size:12px;color:#888}
+.agent-ptr{display:none;text-align:center;padding:8px;font-size:12px;color:#94a3b8}
 .agent-ptr.show{display:block}
 .agent-ptr .ptr-spin{display:inline-block;width:14px;height:14px;border:2px solid #ddd;border-top-color:var(--primary-color);border-radius:50%;animation:aptr-spin .6s linear infinite;vertical-align:middle;margin-right:4px}
 @keyframes aptr-spin{to{transform:rotate(360deg)}}
@@ -135,26 +135,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   .mini-nav{display:none}
   .sidebar{background:#fff}
   .tabs{flex-direction:row;background:#fff;border-bottom:2px solid #e0e0e0;padding:0}
-  .tab{text-align:center;padding:8px 4px;font-size:12px;color:#666;border-bottom:2px solid transparent;margin-bottom:-2px;border-radius:0}
+  .tab{text-align:center;padding:8px 4px;font-size:12px;color:#94a3b8;border-bottom:2px solid transparent;margin-bottom:-2px;border-radius:0}
   .tab.active{color:var(--primary-color);border-bottom-color:var(--primary-color);font-weight:500;background:transparent}
-  .tab:hover{color:#666;background:transparent}
+  .tab:hover{color:#94a3b8;background:transparent}
   .ticket{color:#333;border-bottom-color:#f0f0f0}
   .ticket .customer{color:#333}
-  .ticket .ticket-no{color:#999}
-  .ticket .preview{color:#888}
-  .ticket .time{color:#bbb}
+  .ticket .ticket-no{color:#94a3b8}
+  .ticket .preview{color:#94a3b8}
+  .ticket .time{color:#64748b}
   .chat-messages{background:#fff}
   .chat-area{background:#fff}
   .msg.bot{background:#fff;color:#333}
   .msg.agent{background:#e3f2fd;color:#1565c0}
   .msg.user{background:var(--primary-color);color:#fff}
-  .placeholder{color:#999}
+  .placeholder{color:#94a3b8}
   .cust-info{background:#fff;border-bottom-color:#e0e0e0}
   .cust-info .item{color:#555}
   .cust-info .item b{color:#333}
   .reply-area{background:#fff;border-top-color:#e0e0e0}
   .reply-area textarea{background:#fff;border-color:#ddd;color:#333}
-  .reply-area textarea::placeholder{color:#999}
+  .reply-area textarea::placeholder{color:#94a3b8}
   #searchForm{background:#fff}
   #searchForm input,#searchForm select{background:#fff;border-color:#ddd;color:#333}
   .nav-section{flex:1;display:flex;overflow:hidden;width:100%}
@@ -388,19 +388,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <div class="tab" id="tabAllMine" onclick="switchTab('all_mine')">全部经手</div>
       <div class="tab" id="tabSearch" onclick="switchTab('search')">按时间段搜索</div>
     </div>
-    <div class="ticket-list" id="ticketList"><div style="text-align:center;padding:30px;color:#999">加载中...</div></div>
+    <div class="ticket-list" id="ticketList"><div style="text-align:center;padding:30px;color:#94a3b8">加载中...</div></div>
     <div class="ticket-list" id="searchForm" style="display:none;padding:12px">
       <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:10px">🔍 按条件搜索工单</div>
       <div style="margin-bottom:8px">
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:2px">开始日期</label>
+        <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px">开始日期</label>
         <input type="date" id="searchStartDate" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
       </div>
       <div style="margin-bottom:8px">
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:2px">结束日期</label>
+        <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px">结束日期</label>
         <input type="date" id="searchEndDate" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
       </div>
       <div style="margin-bottom:8px">
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:2px">状态</label>
+        <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px">状态</label>
         <select id="searchStatus" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
           <option value="">全部状态</option>
           <option value="created">待处理</option>
@@ -411,11 +411,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
         </select>
       </div>
       <div style="margin-bottom:8px">
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:2px">工单编号</label>
+        <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px">工单编号</label>
         <input type="text" id="searchTicketNumber" placeholder="如 tk20260101..." style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
       </div>
       <div style="margin-bottom:10px">
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:2px">客户名称</label>
+        <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:2px">客户名称</label>
         <input type="text" id="searchCustomerName" placeholder="搜索客户名称..." style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
       </div>
       <button onclick="doSearch()" style="width:100%;padding:8px;background:var(--primary-color);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">🔍 搜索</button>
@@ -492,9 +492,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div class="close-overlay" id="transferDialog">
   <div class="close-modal">
     <h3>↔️ 转交工单</h3>
-    <p style="font-size:12px;color:#666;margin-bottom:10px">选择接收该工单的IT工程师或工程师：</p>
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:10px">选择接收该工单的IT工程师或工程师：</p>
     <div id="transferAgentList" style="max-height:200px;overflow-y:auto;margin-bottom:10px">
-      <div style="text-align:center;color:#999;padding:15px">加载中...</div>
+      <div style="text-align:center;color:#94a3b8;padding:15px">加载中...</div>
     </div>
     <textarea id="transferNote" rows="2" placeholder="转交备注（选填，如：客户问题需要二线处理）" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;font-family:inherit;margin-bottom:10px;resize:vertical"></textarea>
     <div class="btns">
@@ -507,16 +507,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div class="close-overlay" id="defectDialog">
   <div class="close-modal">
     <h3>🔧 提交缺陷</h3>
-    <p style="font-size:12px;color:#666;margin-bottom:10px">将当前工单问题提交到外部缺陷系统</p>
-    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">选择外部系统</label>
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:10px">将当前工单问题提交到外部缺陷系统</p>
+    <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:3px">选择外部系统</label>
     <select id="defectAdapterSelect" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:10px">
       <option value="">加载中...</option>
     </select>
-    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">缺陷标题 <span style="color:#e53935">*</span></label>
+    <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:3px">缺陷标题 <span style="color:#e53935">*</span></label>
     <input type="text" id="defectTitle" placeholder="请输入缺陷标题" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:10px">
-    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">缺陷描述</label>
+    <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:3px">缺陷描述</label>
     <textarea id="defectDescription" rows="3" placeholder="缺陷描述（选填，默认使用工单问题描述）" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;resize:vertical;font-family:inherit;margin-bottom:10px"></textarea>
-    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">优先级</label>
+    <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:3px">优先级</label>
     <select id="defectPriority" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:10px">
       <option value="low">⬇️ 低</option>
       <option value="normal" selected>➡️ 普通</option>
@@ -533,7 +533,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div class="close-overlay" id="closeDialog">
   <div class="close-modal">
     <h3>✏️ 关闭工单</h3>
-    <p style="font-size:12px;color:#666;margin-bottom:10px">请选择关闭原因并填写备注：</p>
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:10px">请选择关闭原因并填写备注：</p>
     <div class="reason-group" id="reasonGroup">
       <label><input type="radio" name="closeReason" value=""><span class="reason-tag">其他</span></label>
     </div>
@@ -549,10 +549,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div class="close-overlay" id="knowledgeSubmitDialog">
   <div class="close-modal" style="width:600px;max-width:92%">
     <h3>📝 沉淀为知识</h3>
-    <p style="font-size:12px;color:#666;margin-bottom:10px">将当前工单的解决方案沉淀为知识库条目</p>
-    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">知识标题 <span style="color:#e53935">*</span></label>
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:10px">将当前工单的解决方案沉淀为知识库条目</p>
+    <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:3px">知识标题 <span style="color:#e53935">*</span></label>
     <input type="text" id="kbSubmitTitle" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:10px" placeholder="请输入知识标题">
-    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">知识内容 <span style="color:#e53935">*</span></label>
+    <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:3px">知识内容 <span style="color:#e53935">*</span></label>
     <textarea id="kbSubmitContent" rows="8" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;font-family:inherit;margin-bottom:10px;resize:vertical" placeholder="请输入详细的知识内容"></textarea>
     <div class="btns">
       <button class="cancel" onclick="document.getElementById('knowledgeSubmitDialog').classList.remove('show')">取消</button>
@@ -565,10 +565,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div class="close-overlay" id="escalateDialog">
   <div class="close-modal">
     <h3>⬆️ 问题升级</h3>
-    <p style="font-size:12px;color:#666;margin-bottom:10px">将该工单升级到更高级别的工程师处理</p>
-    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">目标级别 <span style="color:#e53935">*</span></label>
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:10px">将该工单升级到更高级别的工程师处理</p>
+    <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:3px">目标级别 <span style="color:#e53935">*</span></label>
     <select id="escalateTargetLevel" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;margin-bottom:10px"></select>
-    <label style="display:block;font-size:12px;color:#888;margin-bottom:3px">升级原因 <span style="color:#e53935">*</span></label>
+    <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:3px">升级原因 <span style="color:#e53935">*</span></label>
     <textarea id="escalateReason" rows="3" placeholder="请输入升级原因（如：需要专家介入、涉及复杂网络拓扑等）" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;font-family:inherit;margin-bottom:10px;resize:vertical"></textarea>
     <div class="btns">
       <button class="cancel" onclick="document.getElementById('escalateDialog').classList.remove('show')">取消</button>
@@ -698,14 +698,14 @@ function confirmEscalate() {
 function loadMyKnowledgeSubmissions() {
   var list = document.getElementById('ticketList');
   list.style.display = 'block';
-  list.innerHTML = '<div style="text-align:center;padding:20px;color:#999">⏳ 加载中...</div>';
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">⏳ 加载中...</div>';
   var xhr = new XMLHttpRequest();
   xhr.open('GET', '/api/agent/knowledge/mine', true);
   xhr.onload = function() {
     try {
       var items = JSON.parse(xhr.responseText);
       if (!items || items.length === 0) {
-        list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#999"><div style="font-size:40px;margin-bottom:8px">📝</div><div>暂无已提交的知识</div><div style="font-size:11px;color:#bbb;margin-top:4px">从工单解决记录中沉淀知识，提交后由管理员审核</div></div>';
+        list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#94a3b8"><div style="font-size:40px;margin-bottom:8px">📝</div><div>暂无已提交的知识</div><div style="font-size:11px;color:#64748b;margin-top:4px">从工单解决记录中沉淀知识，提交后由管理员审核</div></div>';
         return;
       }
       var h = '<div class="search-bar" style="padding:10px 12px"><span style="font-size:14px;font-weight:600;color:#333">📤 我的知识提交</span></div>';
@@ -714,10 +714,10 @@ function loadMyKnowledgeSubmissions() {
       for (var i = 0; i < items.length; i++) {
         var it = items[i];
         h += '<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:7px 6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(it.title||'(无标题)') + '</td>' +
-          '<td style="padding:7px 6px;color:#999;font-size:11px">' + (it.filename||'').substring(0,20) + '</td>' +
+          '<td style="padding:7px 6px;color:#94a3b8;font-size:11px">' + (it.filename||'').substring(0,20) + '</td>' +
           '<td style="padding:7px 6px;text-align:center"><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:' + (it.status==='approved'?'#e8f5e9':it.status==='rejected'?'#ffebee':'#fff8e1') + ';color:' + (it.status==='approved'?'#2e7d32':it.status==='rejected'?'#c62828':'#ef6c00') + '">' + (statusLabels[it.status]||it.status) + '</span></td>' +
-          '<td style="padding:7px 6px;color:#888;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(it.review_notes||'-') + '</td>' +
-          '<td style="padding:7px 6px;color:#999;font-size:11px">' + (it.created_at||'').substring(0,16) + '</td></tr>';
+          '<td style="padding:7px 6px;color:#94a3b8;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(it.review_notes||'-') + '</td>' +
+          '<td style="padding:7px 6px;color:#94a3b8;font-size:11px">' + (it.created_at||'').substring(0,16) + '</td></tr>';
       }
       h += '</tbody></table>';
       list.innerHTML = h;
@@ -800,7 +800,7 @@ function renderTicketResults(tickets) {
   document.getElementById('ticketList').style.display = 'block';
   var statusText = {created:'待处理', processing:'处理中', resolved:'已解决', rated:'待关闭', closed:'已关闭'};
   if (!tickets || tickets.length === 0) {
-    list.innerHTML = '<div style="text-align:center;padding:30px;color:#999">📭 未找到匹配的工单</div>';
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8">📭 未找到匹配的工单</div>';
     return;
   }
   var html = '';
@@ -857,7 +857,7 @@ function loadTickets() {
         else if (currentTab === 'history') emptyMsg += '<br><span style="font-size:11px">暂无可处理的历史工单</span>';
         else if (currentTab === 'all_mine') emptyMsg += '<br><span style="font-size:11px">暂未处理过任何工单</span>';
         else if (currentTab === 'mine') emptyMsg += '<br><span style="font-size:11px">暂无已受理工单</span>';
-        list.innerHTML = '<div style="text-align:center;padding:30px;color:#999;line-height:1.8">' + emptyMsg + '</div>';
+        list.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;line-height:1.8">' + emptyMsg + '</div>';
         return;
       }
       var html = '';
@@ -902,12 +902,12 @@ function selectTicket(tkId, convId, status) {
     if (!an) {
       an = document.createElement('span');
       an.id = 'agentInfoName';
-      an.style.cssText = 'font-size:11px;color:#888;margin-left:8px';
+      an.style.cssText = 'font-size:11px;color:#94a3b8;margin-left:8px';
       document.getElementById('custInfoName').parentNode.appendChild(an);
     }
     an.textContent = '🤖 ' + userName.textContent;
   }
-  document.getElementById('chatMessages').innerHTML = '<div style="text-align:center;color:#999;padding:15px">加载中...</div>';
+  document.getElementById('chatMessages').innerHTML = '<div style="text-align:center;color:#94a3b8;padding:15px">加载中...</div>';
   document.getElementById('custInfo').innerHTML = '';
 
   // 已关闭/已解决的工单不能回复
@@ -1000,7 +1000,7 @@ function loadConversation(convId, tkId) {
         else if (m.role === 'user') speaker = getCustomerName();
         else speaker = labels[m.role] || m.role;
         html += '<div class="msg ' + cls + '">' +
-          '<div style="font-size:10px;color:#999;margin-bottom:2px">' + speaker + '</div>' +
+          '<div style="font-size:10px;color:#94a3b8;margin-bottom:2px">' + speaker + '</div>' +
           content +
           '<span class="meta">' + (labels[m.role] || m.role) + ' · ' + m.created_at + '</span></div>';
       }
@@ -1037,7 +1037,7 @@ function loadConversationSilent(convId) {
         else if (m.role === 'user') speaker = getCustomerName();
         else speaker = labels[m.role] || m.role;
         html += '<div class="msg ' + cls + '">' +
-          '<div style="font-size:10px;color:#999;margin-bottom:2px">' + speaker + '</div>' +
+          '<div style="font-size:10px;color:#94a3b8;margin-bottom:2px">' + speaker + '</div>' +
           content +
           '<span class="meta">' + (labels[m.role] || m.role) + ' · ' + m.created_at + '</span></div>';
       }
@@ -1154,7 +1154,7 @@ var transferTargetId = '';
 function showTransferDialog() {
   transferTargetId = '';
   document.getElementById('transferNote').value = '';
-  document.getElementById('transferAgentList').innerHTML = '<div style="text-align:center;color:#999;padding:15px">加载中...</div>';
+  document.getElementById('transferAgentList').innerHTML = '<div style="text-align:center;color:#94a3b8;padding:15px">加载中...</div>';
   document.getElementById('transferDialog').classList.add('show');
   document.getElementById('confirmTransferBtn').disabled = false;
   document.getElementById('confirmTransferBtn').textContent = '确认转交';
@@ -1164,7 +1164,7 @@ function showTransferDialog() {
     try {
       var agents = JSON.parse(xhr.responseText);
       if (!agents || agents.length === 0) {
-        document.getElementById('transferAgentList').innerHTML = '<div style="text-align:center;padding:20px;color:#999">暂无其他在线IT工程师可转交</div>';
+        document.getElementById('transferAgentList').innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">暂无其他在线IT工程师可转交</div>';
         return;
       }
       var html = '';
@@ -1178,7 +1178,7 @@ function showTransferDialog() {
         var systems = (a.systems && a.systems.length > 0) ? ' 📡 ' + a.systems.join(', ') : '';
         html += '<div class="transfer-opt" data-aid="' + a.id + '" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #eee;border-radius:8px;margin-bottom:4px;cursor:pointer;background:#f9fafb">' +
           '<input type="radio" name="transferAgent" value="' + a.id + '" style="accent-color:#e65100">' +
-          '<span><b>' + label + '</b>' + title + '<br><span style="font-size:11px;color:#999">' + level + dept + systems + '</span></span></div>';
+          '<span><b>' + label + '</b>' + title + '<br><span style="font-size:11px;color:#94a3b8">' + level + dept + systems + '</span></span></div>';
       });
       document.getElementById('transferAgentList').innerHTML = html;
     } catch(e) { console.error(e); }

@@ -270,10 +270,14 @@ body.logged-in .esc-bar .btn-resolved{display:none !important}
 
 /* === 桌面端布局增强 === */
 @media(min-width:768px){
-  .menu-btn{display:inline-flex}
+  .chat-sidebar{left:0}
+  .menu-btn{display:none}
+  .chat-sidebar-overlay{display:none!important}
+  .header{padding-left:280px}
   .header .info h1{font-size:18px;font-weight:600}
-  .chat-box{margin-top:0;padding:24px;max-width:800px;margin-left:auto;margin-right:auto;width:100%}
-  .input-area{max-width:800px;margin:0 auto;width:100%}
+  .chat-box{margin-top:56px;padding:24px;max-width:800px;margin-left:280px;margin-right:auto;width:auto}
+  .input-area{padding:8px 12px;max-width:800px;margin-left:280px;margin-right:auto;width:auto}
+  body{max-width:1200px;margin:0 auto}
   .bottom-nav{display:none!important}
   .bottom-nav-spacer{display:none!important}
 }
