@@ -52,9 +52,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .input-area .btn-human:disabled{opacity:.4;cursor:not-allowed}
 .esc-bar{background:#fff3cd;color:#856404;padding:6px 14px;font-size:12px;display:none;text-align:center}
 .esc-bar .tick{font-size:10px;color:#999}
-.esc-bar .btn-resolved{display:inline-block;background:#43a047;color:#fff;border:none;padding:5px 14px;border-radius:14px;cursor:pointer;font-size:12px;margin-top:4px;transition:all .2s}
-.esc-bar .btn-resolved:hover{background:#2e7d32}
-.esc-bar .btn-resolved.btn-close-request{background:#ff9800}.esc-bar .btn-resolved.btn-close-request:hover{background:#e65100}
+
 .overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:100;display:none;align-items:center;justify-content:center}
 .overlay.show{display:flex}
 .modal{background:#fff;border-radius:16px;padding:28px;width:360px;max-width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);animation:fadeIn .3s}
@@ -213,7 +211,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 /* 设置页用户区块 */
 #customer-auth-section{background:#fff;border-radius:10px;padding:16px;margin:8px 0;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
 /* 已登录状态下隐藏"问题已解决"按钮 */
-body.logged-in .esc-bar .btn-resolved{display:none !important}
 /* 个人中心弹窗 */
 .profile-page-modal{max-width:420px;max-height:80vh;overflow-y:auto;padding:20px}
 .profile-page-modal .profile-header{text-align:center;padding:16px 0;background:linear-gradient(135deg,var(--primary-color),var(--primary-dark));color:#fff;border-radius:10px;margin-bottom:12px}
@@ -333,13 +330,11 @@ body.logged-in .esc-bar .btn-resolved{display:none !important}
   <div class="tag">在线</div>
 </div>
 <div class="esc-bar" id="escBar">
-  <div class="esc-status">
+  <div class="esc-status" id="escStatus">
     <span class="dot"></span>
-    <span><strong>✅ 已对接IT工程师</strong>，请描述您的问题</span>
+    <span><strong>⏳ 已转接，等待IT工程师接单...</strong></span>
   </div>
-  <div style="font-size:11px;color:#856404;margin-top:3px">直接发消息即可，IT工程师回复自动显示在下方</div>
-  <button class="btn-resolved" id="resolvedBtn" onclick="showResolvedDialog()" style="display:inline-block">✓ 问题已解决</button>
-  <!-- requestCloseBtn moved inline into chat flow -->
+  <div style="font-size:11px;color:#856404;margin-top:3px" id="escHint">工程师接单后自动建立连接</div>
 </div>
 <div class="idle-timer" id="idleTimer">⏰ 长时间未操作，<a href="#" onclick="showIdleDialog();return false">点击确认是否继续</a></div>
 <div class="chat-box" id="chatBox" style="flex:1"></div>
@@ -390,25 +385,13 @@ body.logged-in .esc-bar .btn-resolved{display:none !important}
   </div>
 </div>
 
-<!-- "问题已解决" 确认弹窗 -->
-<div class="overlay" id="resolvedDialog">
-  <div class="modal" style="text-align:center">
-    <div style="font-size:48px;margin-bottom:10px">❓</div>
-    <h2>是否已经解决您的问题？</h2>
-    <p>如果问题已解决，可以关闭工单并评价本次服务</p>
-    <button class="btn" onclick="closeResolvedTicket()" style="margin-bottom:8px">✅ 已解决，去评价</button>
-    <button class="btn btn-secondary" onclick="keepChatting()">💬 还没解决，继续咨询</button>
-  </div>
-</div>
-
 <!-- 20分钟超时弹窗 -->
 <div class="overlay" id="idleDialog">
   <div class="modal" style="text-align:center">
     <div style="font-size:48px;margin-bottom:10px">⏰</div>
     <h2>对话已闲置一段时间</h2>
     <p>超过20分钟没有新消息，请问是否还需要继续咨询？</p>
-    <button class="btn" onclick="keepAlive()" style="margin-bottom:8px">💬 继续咨询</button>
-    <button class="btn btn-success" onclick="closeResolvedTicket()">✅ 已解决，关闭工单</button>
+    <button class="btn" onclick="keepAlive()">💬 继续咨询</button>
   </div>
 </div>
 
@@ -541,57 +524,15 @@ function loadCustomerProfile() {
 setTimeout(loadCustomerProfile, 500);
 
 // ========== 问题已解决 ==========
-function showResolvedDialog() {
-  document.getElementById('resolvedDialog').classList.add('show');
-  resetIdleTimer();
-  checkAuthStatus();
-}
-
-function keepChatting() {
-  document.getElementById('resolvedDialog').classList.remove('show');
-  resetIdleTimer();
-  var box = document.getElementById('chatBox');
-  var div = document.createElement('div'); div.className = 'msg system';
-  div.innerHTML = '💬 请继续描述您的问题';
-  box.appendChild(div); box.scrollTop = box.scrollHeight;
-}
-
-function closeResolvedTicket() {
-  document.getElementById('resolvedDialog').classList.remove('show');
-  document.getElementById('idleDialog').classList.remove('show');
-  if (!currentTicketId) {
-    showRating();
-    return;
-  }
-  // 自动确认 + 显示评分
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/customer/tickets/confirm', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.onload = function() {
-    isResolved = true;
-    showRating();
-    // 标记已解决状态
-    document.getElementById('escBar').style.display = 'none';
-    document.getElementById('humanBtn').textContent = '👤 转人工';
-    document.getElementById('humanBtn').disabled = false;
-    document.getElementById('humanBtn').style.background = '#ff5252';
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    if (idleTimer) clearTimeout(idleTimer);
-    if (idleWarningTimer) clearTimeout(idleWarningTimer);
-    document.getElementById('idleTimer').style.display = 'none';
-    document.getElementById('resolvedMsg').style.display = 'block';
-    updateStatus('confirmed');
-  };
-  xhr.send(JSON.stringify({ticket_id: currentTicketId}));
-}
+// ========== 消息显示 ==========
 
 // ========== 消息显示 ==========
-function addMsg(content, role, time) {
+function addMsg(content, role, time, displayName) {
   var key = content + role + (time||'');
   if (msgCache[key]) return;
   msgCache[key] = true;
   var speakerName = '';
-  if (role === 'agent') speakerName = '<div style="font-size:10px;color:#999;margin-bottom:2px">' + (getAgentName() || 'IT工程师') + '</div>';
+  if (role === 'agent') speakerName = '<div style="font-size:10px;color:#999;margin-bottom:2px">' + (displayName || getAgentName() || 'IT工程师') + '</div>';
   var d = document.createElement('div');
   d.className = 'msg ' + role;
   d.innerHTML = speakerName + content + '<span class="time">' + (time||new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})) + '</span>';
@@ -760,7 +701,7 @@ function send() {
       if(d.error){addMsg('⚠️ '+d.error,'system');btn.disabled=false;inp.focus();return;}
       convId=d.conversation_id;
       var reply=d.reply.replace(/</g,'&lt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
-      addMsg(reply, d.escalated?'agent':'bot');
+      addMsg(reply, d.escalated?'agent':'bot', null, '知识库AI');
       if(d.escalated && !isEscalated){isEscalated=true;showEscalated();}
     }catch(e){}
     btn.disabled=false;inp.focus();
@@ -801,6 +742,24 @@ function showEscalated() {
   document.getElementById('humanBtn').style.background='#999';
   startPolling();
   resetIdleTimer();
+}
+
+// 当IT工程师接单后更新escBar
+var _agentAssigned = false;
+function showAgentAssigned(agentName) {
+  if (_agentAssigned) return;
+  _agentAssigned = true;
+  var el = document.getElementById('escStatus');
+  if (el) el.innerHTML = '<span class="dot" style="background:#43a047"></span><span><strong>✅ 已对接IT工程师</strong>，请描述您的问题</span>';
+  var hint = document.getElementById('escHint');
+  if (hint) hint.textContent = '直接发消息即可，' + (agentName || 'IT工程师') + '回复自动显示在下方';
+  // Update engineer info bar
+  var ai = document.getElementById('agentInfo');
+  if (ai) {
+    var nm = document.getElementById('agentName');
+    if (nm && agentName) nm.textContent = agentName;
+    ai.style.display = 'flex';
+  }
 }
 
 // ========== 轮询IT工程师回复 ==========
@@ -862,6 +821,13 @@ function pollMessages(){
         if(m.role==='agent'){
           var c=m.content.replace(/</g,'&lt;').replace(/\n/g,'<br>');
           addMsg(c,'agent',m.created_at.substring(11,16));
+          // 检测到工程师首次回复 → 更新对接状态
+          if (!_agentAssigned) {
+            var an = m.agent_name || '';
+            // agent content格式为 [工程师名字]: 内容
+            if (!an) { var ma = c.match(/^\[(.*?)\]/); if (ma) an = ma[1]; }
+            showAgentAssigned(an || 'IT工程师');
+          }
         } else if(m.role==='system'){
           var c=m.content.replace(/</g,'&lt;').replace(/\n/g,'<br>');
           addMsg(c,'system',m.created_at.substring(11,16));
