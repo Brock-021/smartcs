@@ -1152,6 +1152,12 @@ def init_db():
         pwd_hash = hashlib.sha256(f'admin:{ADMIN_PASSWORD}'.encode()).hexdigest()
         db.execute("INSERT OR IGNORE INTO agents(id,name,email,password_hash,role) VALUES(?,?,?,?,?)",
                    ('admin-001', '管理员', 'admin@smartcs.com', pwd_hash, 'superadmin'))
+        # 管理员默认 L4 级别
+        db.execute("INSERT OR IGNORE INTO agent_profiles(id,agent_id,display_name,agent_level) VALUES(?,?,?,?)",
+                   ('ap-admin-001', 'admin-001', '管理员', 4))
+        # 三员管理员也设 L4
+        for _tid in db.execute("SELECT id FROM agents WHERE role IN ('sysadmin','secadmin','audadmin')").fetchall():
+            db.execute("UPDATE agent_profiles SET agent_level=4 WHERE agent_id=?", (_tid['id'],))
         db.execute("INSERT OR IGNORE INTO agents(id,name,email,password_hash,role) VALUES(?,?,?,?,?)",
                    ('agent-001', '工程师01', 'agent@smartcs.com', pwd_hash, 'agent'))
         for _lvl_id, _lvl_name, _lvl_email, _lvl_level, _lvl_display, _lvl_title in [
