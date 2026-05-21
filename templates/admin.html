@@ -145,7 +145,7 @@ table tr.cursor-pointer{cursor:pointer}
 .sidebar{display:none}
 @media(min-width:768px){
   .nav-tabs{display:none}
-  .sidebar{display:flex;flex-direction:column;position:fixed;left:0;top:50px;bottom:0;width:220px;background:#1e293b;z-index:49;overflow-y:auto}
+  .sidebar{display:flex;flex-direction:column;position:fixed;left:0;top:50px;bottom:0;width:220px;background:#1e293b;z-index:49;overflow-y:auto;overflow-x:hidden}
   .sidebar .category{border-bottom:1px solid #334155}
   .sidebar .category-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;color:#94a3b8;font-size:13px;font-weight:500;transition:background .15s;user-select:none}
   .sidebar .category-header:hover{background:#334155;color:#e2e8f0}
@@ -154,7 +154,7 @@ table tr.cursor-pointer{cursor:pointer}
   .sidebar .tab{display:block;padding:9px 16px 9px 28px;font-size:13px;cursor:pointer;color:#cbd5e1;transition:all .15s;border-left:3px solid transparent}
   .sidebar .tab:hover{background:#334155;color:#f1f5f9}
   .sidebar .tab.active{background:var(--primary-color);color:#fff;border-left-color:#fff;font-weight:500}
-  .content{margin-left:220px}
+  .content,.content.active,.admin-section{padding:20px 24px;margin-left:220px}
 }
 /* 移动端隐藏侧边栏 */
 @media(max-width:767px){
@@ -1023,6 +1023,7 @@ function switchPage(page, el) {
   el.classList.add('active');
   document.querySelectorAll('.content').forEach(function(c){c.classList.remove('active')});
   document.querySelectorAll('.admin-section').forEach(function(c){c.style.display = 'none'});
+  // Note: audit history page uses .content (pageAudit) for consistent sidebar styling
   var pageEl = document.getElementById('page' + page.charAt(0).toUpperCase() + page.slice(1));
   if (pageEl) pageEl.classList.add('active');
   if (page === 'tickets') loadTickets();
@@ -1034,7 +1035,7 @@ function switchPage(page, el) {
   if (page === 'systems') loadSystems();
   if (page === 'webhooks') loadWebhooks();
   if (page === 'auth') { loadAuthProviders(); loadAuthMappingFilter(); }
-  if (page === 'audit') { document.getElementById('section-audit').style.display = 'block'; loadAuditLogs(); }
+  if (page === 'audit') { loadAuditLogs(); }
   if (page === 'loginlogs') loadLoginLogs();
   if (page === 'analytics') loadAnalytics();
   if (page === 'knowledge') { loadKnowledgeBase(); loadKnowledgePending(); loadKnowledgeRejected(); }
@@ -3601,7 +3602,7 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <!-- ====== 审计日志 ====== -->
-<div class="admin-section" id="section-audit" style="display:none">
+<div class="content" id="pageAudit">
   <div class="card">
     <h2><i class="icon">📋</i> 审计日志</h2>
     <p style="color:#666;font-size:13px;margin-bottom:12px">记录所有用户、IT工程师、管理员的系统操作，便于追踪与审计。</p>
