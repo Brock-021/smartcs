@@ -296,7 +296,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <span class="icon">💬</span>
       <span>在线咨询</span>
     </div>
-    <div class="sb-item" onclick="closeChatSidebar();window.location.href='/user/tickets'">
+    <div class="sb-item" onclick="closeChatSidebar();showHistory()">
       <span class="icon">📋</span>
       <span>我的工单</span>
     </div>
@@ -304,13 +304,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <span class="icon">📚</span>
       <span>常见问题</span>
     </div>
-    <div class="sb-item" onclick="closeChatSidebar()">
+    <div class="sb-item" onclick="closeChatSidebar();showProfilePage()">
       <span class="icon">👤</span>
       <span>个人中心</span>
     </div>
   </div>
   <div class="sb-footer">
     <div class="logout-btn" onclick="logout()">🚪 退出登录</div>
+  </div>
+</div>
+
+<!-- 个人中心弹窗 -->
+<div class="overlay" id="profileInfoModal">
+  <div class="modal">
+    <h2>👤 个人中心</h2>
+    <p style="font-size:12px;color:#999;margin-bottom:14px">查看和编辑您的个人信息</p>
+    <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">姓名</label>
+    <input type="text" id="piName" placeholder="您的姓名" style="width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:14px;margin-bottom:8px;outline:none">
+    <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">邮箱</label>
+    <input type="email" id="piEmail" placeholder="邮箱（仅用于联系）" style="width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:14px;margin-bottom:8px;outline:none">
+    <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">手机号</label>
+    <input type="text" id="piPhone" placeholder="手机号（选填）" style="width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:14px;margin-bottom:14px;outline:none">
+    <button class="btn" onclick="saveProfileInfo()" style="margin-bottom:8px">💾 保存信息</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('profileInfoModal').classList.remove('show')">关闭</button>
   </div>
 </div>
 <div class="header" id="headerArea">
@@ -982,6 +998,50 @@ if (window.Notification && Notification.permission === 'default') {
 addMsg('您好！我是智能客服 🤖<br><br><strong>请问有什么可以帮您？</strong><br>• 咨询产品或服务<br>• 查询常见问题<br>• 了解业务流程<br><br>如果解决不了，请点击下方的 <strong>"转人工"</strong> 按钮，我将为您对接IT工程师。', 'bot');
 
 
+// ========== 个人中心 ==========
+function showProfile() {
+  document.getElementById('profileInfoModal').classList.add('show');
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/customer/me', true);
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.logged_in && d.customer) {
+        document.getElementById('piName').value = d.customer.name || '';
+        document.getElementById('piEmail').value = d.customer.email || '';
+        document.getElementById('piPhone').value = d.customer.contact || '';
+      }
+    } catch(e) {}
+  };
+  xhr.send();
+}
+
+function saveProfileInfo() {
+  var name = document.getElementById('piName').value.trim();
+  var email = document.getElementById('piEmail').value.trim();
+  var contact = document.getElementById('piPhone').value.trim();
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/customer/profile', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    try {
+      var d = JSON.parse(xhr.responseText);
+      if (d.ok) {
+        // 更新各处的用户名
+        document.getElementById('userDisplayName').textContent = '👤 ' + name;
+        var sbName = document.querySelector('#chatsb .sb-header .name');
+        if (sbName) sbName.textContent = name || '游客';
+        document.getElementById('profileInfoModal').classList.remove('show');
+        loadCustomerAuth();
+      } else {
+        alert(d.error || '保存失败');
+      }
+    } catch(e) { alert('保存失败'); }
+  };
+  xhr.onerror = function() { alert('网络错误'); };
+  xhr.send(JSON.stringify({name: name, email: email, contact: contact}));
+}
+
 // ========== 检查登录状态
 checkAuthStatus();
 
@@ -1005,6 +1065,9 @@ function loadCustomerAuth() {
     try {
       var d = JSON.parse(xhr.responseText);
       if (d.logged_in && d.customer) {
+        // 更新侧边栏用户名
+        var sbName = document.querySelector('#chatsb .sb-header .name');
+        if (sbName) sbName.textContent = d.customer.name || '游客';
         var initial = d.customer.name ? d.customer.name.charAt(0) : '?';
         section.innerHTML = '<div class="profile-info" style="margin-bottom:4px">' +
           '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0">' +
@@ -1070,6 +1133,11 @@ function doLogin() {
       if (data.ok) {
         loadCustomerAuth();
         loadCustomerTickets();
+        // 更新侧边栏用户名
+        if (data.customer && data.customer.name) {
+          var sbName = document.querySelector('#chatsb .sb-header .name');
+          if (sbName) sbName.textContent = data.customer.name;
+        }
       } else {
         errEl.textContent = data.error || '登录失败';
       }
@@ -1096,6 +1164,9 @@ function doRegister() {
       if (data.ok) {
         loadCustomerAuth();
         loadCustomerTickets();
+        // 更新侧边栏用户名
+        var sbName = document.querySelector('#chatsb .sb-header .name');
+        if (data.customer && data.customer.name && sbName) sbName.textContent = data.customer.name;
       } else {
         errEl.textContent = data.error || '注册失败';
       }
