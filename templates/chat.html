@@ -701,7 +701,7 @@ function send() {
       if(d.error){addMsg('⚠️ '+d.error,'system');btn.disabled=false;inp.focus();return;}
       convId=d.conversation_id;
       var reply=d.reply.replace(/</g,'&lt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
-      addMsg(reply, d.escalated?'agent':'bot', null, '知识库AI');
+      if (reply) addMsg(reply, d.escalated?'agent':'bot', null, '知识库AI');
       if(d.escalated && !isEscalated){isEscalated=true;showEscalated();}
     }catch(e){}
     btn.disabled=false;inp.focus();

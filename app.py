@@ -1581,9 +1581,11 @@ def chat():
 
     # If already escalated, skip AI - just relay message to agent
     if conv and conv['status'] == 'escalated':
+        db.execute("INSERT INTO messages(id,conversation_id,role,content) VALUES(?,?,?,?)",
+                   (gen_id('msg-'), conv_id, 'user', msg))
         db.execute("UPDATE conversations SET updated_at=datetime('now','localtime') WHERE id=?", (conv_id,))
         db.commit()
-        return jsonify({'reply':'📝 消息已发送给IT工程师，请等待回复...','conversation_id':conv_id,'escalated':True})
+        return jsonify({'reply':'','conversation_id':conv_id,'escalated':True})
 
     knowledge = search_knowledge(msg)
     msgs = [{'role':'system','content':SYSTEM_PROMPT}]
