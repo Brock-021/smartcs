@@ -12,8 +12,8 @@
 <style>
 :root {
   --primary-color: {{ brand_primary_color }};
-  --primary-dark: var(--primary-dark);
-  --primary-darker: var(--primary-darker);
+  --primary-dark: {{ brand_primary_color }}cc;
+  --primary-darker: {{ brand_primary_color }}99;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f0f2f5;height:100vh;display:flex;flex-direction:column}
@@ -245,10 +245,75 @@ body.logged-in .esc-bar .btn-resolved{display:none !important}
 /* 工单卡片详情展开 */
 .tk-detail2.show{display:block !important}
 
+/* === 侧边菜单按钮 (桌面端) === */
+.menu-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;width:44px;height:44px;border-radius:10px;cursor:pointer;font-size:20px;display:none;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.menu-btn:hover{background:rgba(255,255,255,0.25)}
+
+/* === 侧边栏覆盖层 === */
+.chat-sidebar-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:200;display:none}
+.chat-sidebar-overlay.show{display:block}
+
+/* === 侧边栏 === */
+.chat-sidebar{position:fixed;top:0;left:-260px;width:260px;bottom:0;background:#1e293b;z-index:201;transition:left .3s ease;display:flex;flex-direction:column;padding:0}
+.chat-sidebar.open{left:0}
+.chat-sidebar .sb-header{padding:40px 20px 20px;background:linear-gradient(135deg,var(--primary-color) 0%,var(--primary-dark) 100%);color:#fff}
+.chat-sidebar .sb-header .name{font-size:16px;font-weight:600}
+.chat-sidebar .sb-header .sub{font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px}
+.chat-sidebar .sb-menu{flex:1;padding:12px 0}
+.chat-sidebar .sb-item{display:flex;align-items:center;gap:12px;padding:14px 20px;color:#94a3b8;cursor:pointer;font-size:14px;transition:all .2s}
+.chat-sidebar .sb-item:hover{background:rgba(255,255,255,0.08);color:#e2e8f0}
+.chat-sidebar .sb-item.active{color:var(--primary-color);background:rgba(255,255,255,0.06);border-left:3px solid var(--primary-color)}
+.chat-sidebar .sb-item .icon{font-size:18px}
+.chat-sidebar .sb-footer{padding:16px 20px;border-top:1px solid #334155}
+.chat-sidebar .sb-footer .logout-btn{width:100%;padding:10px;background:rgba(255,255,255,0.1);border:1px solid #475569;border-radius:8px;color:#94a3b8;cursor:pointer;font-size:13px;text-align:center}
+.chat-sidebar .sb-footer .logout-btn:hover{background:rgba(255,255,255,0.15);color:#e2e8f0}
+
+/* === 桌面端布局增强 === */
+@media(min-width:768px){
+  .menu-btn{display:inline-flex}
+  .header .info h1{font-size:18px;font-weight:600}
+  .chat-box{margin-top:0;padding:24px;max-width:800px;margin-left:auto;margin-right:auto;width:100%}
+  .input-area{max-width:800px;margin:0 auto;width:100%}
+  .bottom-nav{display:none!important}
+  .bottom-nav-spacer{display:none!important}
+}
+
 </style>
 </head>
 <body>
+<!-- 侧边栏覆盖层 -->
+<div class="chat-sidebar-overlay" id="chatsbOverlay" onclick="closeChatSidebar()"></div>
+
+<!-- 侧边栏 -->
+<div class="chat-sidebar" id="chatsb">
+  <div class="sb-header">
+    <div class="name">{{ user_name or '游客' }}</div>
+    <div class="sub">{{ brand_name }}</div>
+  </div>
+  <div class="sb-menu">
+    <div class="sb-item active" onclick="closeChatSidebar()">
+      <span class="icon">💬</span>
+      <span>在线咨询</span>
+    </div>
+    <div class="sb-item" onclick="closeChatSidebar();window.location.href='/user/tickets'">
+      <span class="icon">📋</span>
+      <span>我的工单</span>
+    </div>
+    <div class="sb-item" onclick="closeChatSidebar()">
+      <span class="icon">📚</span>
+      <span>常见问题</span>
+    </div>
+    <div class="sb-item" onclick="closeChatSidebar()">
+      <span class="icon">👤</span>
+      <span>个人中心</span>
+    </div>
+  </div>
+  <div class="sb-footer">
+    <div class="logout-btn" onclick="logout()">🚪 退出登录</div>
+  </div>
+</div>
 <div class="header" id="headerArea">
+  <button class="menu-btn" onclick="toggleChatSidebar()">☰</button>
   <div class="logo">🤖</div>
   <div class="info"><h1>智能客服</h1><div class="sub"><span id="userDisplayName">AI 自助服务</span> · 7×24小时 <span class="ticket-status" id="ticketStatusLabel" style="display:none"></span></div></div>
   
@@ -1694,6 +1759,18 @@ function resumeTicketConversation(ticketId, convId) {
   }, {passive: true});
 })();
 });
+
+// ========== 侧边栏控制 ==========
+function toggleChatSidebar(){
+  document.getElementById('chatsb').classList.toggle('open');
+  document.getElementById('chatsbOverlay').classList.toggle('show');
+  document.body.style.overflow = document.getElementById('chatsb').classList.contains('open') ? 'hidden' : '';
+}
+function closeChatSidebar(){
+  document.getElementById('chatsb').classList.remove('open');
+  document.getElementById('chatsbOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
 </script>
 
 <!-- 下拉刷新指示器 -->

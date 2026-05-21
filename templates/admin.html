@@ -140,6 +140,26 @@ table tr.cursor-pointer{cursor:pointer}
 
 /* 桌面端隐藏汉堡按钮 */
 @media(min-width:768px){.hamburger{display:none}}
+
+/* ===== 侧边栏导航 (桌面端 ≥768px) ===== */
+.sidebar{display:none}
+@media(min-width:768px){
+  .nav-tabs{display:none}
+  .sidebar{display:flex;flex-direction:column;position:fixed;left:0;top:50px;bottom:0;width:220px;background:#1e293b;z-index:49;overflow-y:auto}
+  .sidebar .category{border-bottom:1px solid #334155}
+  .sidebar .category-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;color:#94a3b8;font-size:13px;font-weight:500;transition:background .15s;user-select:none}
+  .sidebar .category-header:hover{background:#334155;color:#e2e8f0}
+  .sidebar .category-header .arrow{font-size:12px;transition:transform .15s;color:#64748b}
+  .sidebar .category-body{padding:0 0 4px 0}
+  .sidebar .tab{display:block;padding:9px 16px 9px 28px;font-size:13px;cursor:pointer;color:#cbd5e1;transition:all .15s;border-left:3px solid transparent}
+  .sidebar .tab:hover{background:#334155;color:#f1f5f9}
+  .sidebar .tab.active{background:var(--primary-color);color:#fff;border-left-color:#fff;font-weight:500}
+  .content{margin-left:220px}
+}
+/* 移动端隐藏侧边栏 */
+@media(max-width:767px){
+  .sidebar{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -152,6 +172,51 @@ table tr.cursor-pointer{cursor:pointer}
     <button class="hamburger" id="navToggle" onclick="toggleMobileNav()">☰</button>
   </div>
 </div>
+
+<!-- 桌面端侧边栏导航 -->
+<div class="sidebar" id="navSidebar">
+  <div class="category">
+    <div class="category-header" onclick="toggleCategory(this)">
+      <span>📋 业务管理</span>
+      <span class="arrow">▾</span>
+    </div>
+    <div class="category-body">
+      <div class="tab active" data-page="tickets" onclick="switchPage('tickets',this)">📋 工单管理 <span class="count" id="sidebarOpenCount">0</span></div>
+      <div class="tab" data-page="stats" onclick="switchPage('stats',this)">📊 数据统计</div>
+      <div class="tab" data-page="users" onclick="switchPage('users',this)">👥 用户管理</div>
+      <div class="tab" data-page="agents" onclick="switchPage('agents',this)">👤 工程师管理</div>
+      <div class="tab" data-page="reasons" onclick="switchPage('reasons',this)">🏷️ 关闭原因</div>
+      <div class="tab" data-page="systems" onclick="switchPage('systems',this)">🔧 负责系统</div>
+      <div class="tab" data-page="knowledge" onclick="switchPage('knowledge',this)">📚 知识库</div>
+    </div>
+  </div>
+  <div class="category">
+    <div class="category-header" onclick="toggleCategory(this)">
+      <span>⚙️ 系统集成</span>
+      <span class="arrow">▾</span>
+    </div>
+    <div class="category-body">
+      <div class="tab" data-page="analytics" onclick="switchPage('analytics',this)">📊 数据分析</div>
+      <div class="tab" data-page="config" onclick="switchPage('config',this)">⚙️ 系统配置</div>
+      <div class="tab" data-page="brand" onclick="switchPage('brand',this)">🎨 品牌配置</div>
+      <div class="tab" data-page="webhooks" onclick="switchPage('webhooks',this)">🔗 集成网关</div>
+      <div class="tab" data-page="auth" onclick="switchPage('auth',this)">🔐 认证管理</div>
+      <div class="tab" data-page="upgrades" onclick="switchPage('upgrades',this)">📋 系统升级记录</div>
+    </div>
+  </div>
+  <div class="category">
+    <div class="category-header" onclick="toggleCategory(this)">
+      <span>🔒 安全审计</span>
+      <span class="arrow">▾</span>
+    </div>
+    <div class="category-body">
+      <div class="tab" data-page="security" onclick="switchPage('security',this)">🔒 安全配置</div>
+      <div class="tab" data-page="loginlogs" onclick="switchPage('loginlogs',this)">🔑 登录日志</div>
+      <div class="tab" data-page="audit" onclick="switchPage('audit',this)">📋 审计日志</div>
+    </div>
+  </div>
+</div>
+
 <div class="nav-tabs" id="navTabs">
   <div class="tab active" id="tabTickets" data-page="tickets" onclick="switchPage('tickets',this)">📋 工单管理 <span class="count" id="openCount">0</span></div>
   <div class="tab" id="tabStats" data-page="stats" onclick="switchPage('stats',this)">📊 数据统计</div>
@@ -903,12 +968,24 @@ function getRoleTabs() {
   return ['tickets','stats','users','agents','config','reasons','upgrades','systems','webhooks','analytics','knowledge','auth','loginlogs','audit'];
 }
 
+function toggleCategory(header) {
+  var body = header.nextElementSibling;
+  var arrow = header.querySelector('.arrow');
+  if (body.style.display === 'none' || body.style.display === '') {
+    body.style.display = 'block';
+    arrow.textContent = '▾';
+  } else {
+    body.style.display = 'none';
+    arrow.textContent = '▸';
+  }
+}
+
 function applyRoleBasedNav() {
   var allowedTabs = getRoleTabs();
-  document.querySelectorAll('.nav-tabs .tab').forEach(function(tab) {
+  // Handle sidebar tabs
+  document.querySelectorAll('#navSidebar .tab').forEach(function(tab) {
     var page = tab.getAttribute('data-page');
     if (!page) {
-      // Extract page name from onclick attribute
       var onclick = tab.getAttribute('onclick') || '';
       var match = onclick.match(/switchPage\('([^']+)'/);
       if (match) page = match[1];
@@ -916,6 +993,23 @@ function applyRoleBasedNav() {
     if (page && allowedTabs.indexOf(page) === -1) {
       tab.style.display = 'none';
     }
+  });
+  // Handle mobile nav tabs
+  document.querySelectorAll('#navTabs .tab').forEach(function(tab) {
+    var page = tab.getAttribute('data-page');
+    if (!page) {
+      var onclick = tab.getAttribute('onclick') || '';
+      var match = onclick.match(/switchPage\('([^']+)'/);
+      if (match) page = match[1];
+    }
+    if (page && allowedTabs.indexOf(page) === -1) {
+      tab.style.display = 'none';
+    }
+  });
+  // Hide empty categories in sidebar
+  document.querySelectorAll('#navSidebar .category').forEach(function(cat) {
+    var visible = cat.querySelectorAll('.tab:not([style*="display: none"])').length;
+    cat.style.display = visible > 0 ? 'block' : 'none';
   });
 }
 
@@ -1673,6 +1767,8 @@ function loadTickets() {
 
 function renderTicketStats(s) {
   document.getElementById('openCount').textContent = s.open;
+  var sidebarCount = document.getElementById('sidebarOpenCount');
+  if (sidebarCount) sidebarCount.textContent = s.open;
   document.getElementById('ticketStats').innerHTML = 
     '<div class="stat-card"><div class="num">'+s.open+'</div><div class="label">待处理</div></div>' +
     '<div class="stat-card"><div class="num">'+s.assigned+'</div><div class="label">处理中</div></div>' +
